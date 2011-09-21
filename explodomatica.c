@@ -164,7 +164,7 @@ static struct sound *low_pass(struct sound *s, double RC)
 {
 	int i;
 	struct sound *o;
-	double dt = (1.0 / SAMPLERATE);
+	double dt = (1.0 / (double) SAMPLERATE);
 	double alpha = dt / (RC + dt);
 
 	o = malloc(sizeof(*o));
@@ -209,7 +209,7 @@ static struct sound *change_speed(struct sound *s, double factor)
 	o->data[1] = s->data[1];
 	o->nsamples = 2;
 
-	for (i = 1; i < nframes;) {
+	for (i = 2; i < nframes;) {
 		sample_point = (double) i / (double) nframes * (double) s->nsamples;
 		sp1 = (int) sample_point;
 		if ((sp1 % 2) != 0)
@@ -221,7 +221,7 @@ static struct sound *change_speed(struct sound *s, double factor)
 		i++;
 		sample_point = (double) i / (double) nframes * (double) s->nsamples;
 		sp1 = (int) sample_point;
-		if ((sp1 % 2) != 0)
+		if ((sp1 % 2) != 1)
 			sp1--;
 		sp2 = sp1 + 2;
 		o->data[i] = interpolate(sample_point, (double) sp1, s->data[sp1], 
@@ -232,15 +232,42 @@ static struct sound *change_speed(struct sound *s, double factor)
 	return o;
 }
 
+static struct sound *copy_sound(struct sound *s)
+{
+	struct sound *o;
+	int i, nframes;
+
+	nframes = (int) (s->nsamples / 2);
+	o = alloc_sound(nframes);
+
+	for (i = 0; i < s->nsamples; i++)
+		o->data[i] = s->data[i];
+	o->nsamples = s->nsamples;
+	return o;
+}
+
+static void renormalize(struct sound *s)
+{
+	int i;
+	double max = 0;
+
+	for (i = 0; i < s->nsamples; i++)
+		if (abs(s->data[i]) > max)
+			max = abs(s->data[i]);
+	for (i = 0; i < s->nsamples; i++)
+		s->data[i] = s->data[i] / max;
+}
+
 static struct sound *make_explosion(double seconds, int nlayers)
 {
 	struct sound *s[10];
 	struct sound *t, *t2;
 	double RC;
+	double rc[] = { 25.0, 19.0, 10.0, 3.0};
 	int i;
 
-	if (nlayers > 10)
-		nlayers = 10;
+	if (nlayers > 4)
+		nlayers = 4;
 	if (nlayers < 1)
 		nlayers = 1;
 
@@ -248,17 +275,19 @@ static struct sound *make_explosion(double seconds, int nlayers)
 		double speedfactor;
 		t = make_noise(seconds_to_frames(seconds));
 		fadeout(t, t->nsamples);
+		t2 = low_pass(t, rc[i] / (double) SAMPLERATE);
 		speedfactor = (double) i + 1.0;
-		s[i] = change_speed(t, speedfactor);
-		RC = 200.0 - ((199.0 * i) / (double) nlayers) / SAMPLERATE; 
-		low_pass(s[i], RC);
+		s[i] = change_speed(t2, speedfactor);
 		free_sound(t);
+		free_sound(t2);
 	}
 
 	for (i = 1; i < nlayers; i++) {
 		accumulate_sound(s[0], s[i]);
+		renormalize(s[0]);
 		free_sound(s[i]);
 	}
+
 	return s[0];
 }
 
@@ -278,7 +307,7 @@ int main(int argc, char *argv[])
 	s5 = low_pass(s, 12.0 / SAMPLERATE); 
 	s2 = change_speed(s, 2.0);
 #endif
-	s = make_explosion(5.0, 5);
+	s = make_explosion(5.0, 4);
 	save_file(argv[1], s);
 	free_sound(s);
 
