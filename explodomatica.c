@@ -35,6 +35,14 @@ struct sound {
 	int nsamples;
 };
 
+usage()
+{
+	fprintf(stderr, "usage:\n");
+	fprintf(stderr, "explodomatica somefile.wav\n");
+	fprintf(stderr, "caution: somefile.wav will be overwritten.\n");
+	exit(1);
+}
+
 static void free_sound(struct sound *s)
 {
 	if (s->data)
@@ -63,7 +71,6 @@ static int save_file(char *filename, struct sound *s)
 {
 	SNDFILE *sf;
 	SF_INFO sfinfo;
-
 
 	sfinfo.frames = 0;
 	sfinfo.samplerate = SAMPLERATE;
@@ -294,6 +301,9 @@ static struct sound *make_explosion(double seconds, int nlayers)
 int main(int argc, char *argv[])
 {
 	struct sound *s, *s2, *s3, *s4, *s5;
+
+	if (argc < 2)
+		usage();
 
 #if 0
 	s = make_sinewave(seconds_to_frames(2), 120); 
