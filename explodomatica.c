@@ -300,6 +300,11 @@ static void delay_effect_in_place(struct sound *s, int delay_samples)
 	}
 }
 
+static void dot(void)
+{
+	printf("."); fflush(stdout);
+}
+
 static struct sound *poor_mans_reverb(struct sound *s,
 	int early_refls, int late_refls)
 {
@@ -308,50 +313,41 @@ static struct sound *poor_mans_reverb(struct sound *s,
 	struct sound *withverb;
 	double gain;
 
-	printf("1\n");
+	printf("Calculating poor man's reverb");
+	fflush(stdout);
 	withverb = alloc_sound(s->nsamples * 2);
 	for (i = 0; i < s->nsamples; i++)
 		withverb->data[i] = s->data[i];
-	printf("2\n");
+	dot();
 	withverb->nsamples = s->nsamples * 2;
 	echo = copy_sound(withverb);
 
 	for (i = 0; i < early_refls; i++) {
-		printf("3, i = %d\n", i);
+		dot();
 		echo2 = sliding_low_pass(echo, 0.8, 0.8);
 		gain = (double) rand() / (double) RAND_MAX * 0.05 + 0.03;
-		printf("4, i = %d\n", i);
 		amplify_in_place(echo, gain); 
-		printf("5, i = %d\n", i);
 
 		/* 100 ms range */
 		delay = (4410 * (rand() & 0x0ffff)) / 0x0ffff;
-		printf("6, i = %d\n", i);
 		delay_effect_in_place(echo2, delay);
-		printf("7, i = %d\n", i);
 		accumulate_sound(withverb, echo2);
-		printf("8, i = %d\n", i);
 		free_sound(echo2);
 	}
 
 	for (i = 0; i < late_refls; i++) {
-		printf("9, i = %d\n", i);
+		dot();
 		echo2 = sliding_low_pass(echo, 0.7, 0.3);
 		gain = (double) rand() / (double) RAND_MAX * 0.03 + 0.03;
-		printf("10, i = %d\n", i);
 		amplify_in_place(echo, gain); 
-		printf("11, i = %d\n", i);
 
 		/* 1000 ms range */
 		delay = (44100 * (rand() & 0x0ffff)) / 0x0ffff;
-		printf("12, i = %d\n", i);
 		delay_effect_in_place(echo2, delay);
-		printf("13, i = %d\n", i);
 		accumulate_sound(withverb, echo2);
-		printf("14, i = %d\n", i);
 		free_sound(echo2);
 	}
-	printf("15, i = %d\n", i);
+	printf("done\n");
 	return withverb;
 }
 
