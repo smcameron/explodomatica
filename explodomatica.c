@@ -282,6 +282,8 @@ static void amplify_in_place(struct sound *s, double gain)
 		s->data[i] = s->data[i] * gain;
 		if (s->data[i] > 1.0)
 			s->data[i] = 1.0;
+		if (s->data[i] < -1.0)
+			s->data[i] = -1.0;
 	}
 }
 
@@ -326,7 +328,7 @@ static struct sound *poor_mans_reverb(struct sound *s,
 	for (i = 0; i < early_refls; i++) {
 		dot();
 		echo2 = sliding_low_pass(echo, 0.8, 0.8);
-		gain = (double) rand() / (double) RAND_MAX * 0.05 + 0.03;
+		gain = (double) rand() / (double) RAND_MAX * 0.03 + 0.03;
 		amplify_in_place(echo, gain); 
 
 		/* 100 ms range */
@@ -339,7 +341,7 @@ static struct sound *poor_mans_reverb(struct sound *s,
 	for (i = 0; i < late_refls; i++) {
 		dot();
 		echo2 = sliding_low_pass(echo, 0.7, 0.3);
-		gain = (double) rand() / (double) RAND_MAX * 0.03 + 0.03;
+		gain = (double) rand() / (double) RAND_MAX * 0.01 + 0.03;
 		amplify_in_place(echo, gain); 
 
 		/* 1000 ms range */
@@ -415,7 +417,7 @@ int main(int argc, char *argv[])
 	s = make_explosion(4.0, 4);
 	change_speed_inplace(s, 0.25);
 	trim_trailing_silence(s);
-	s2 = poor_mans_reverb(s, 10, 20);
+	s2 = poor_mans_reverb(s, 10, 50);
 	trim_trailing_silence(s2);
 	save_file(argv[1], s2, 1);
 	free_sound(s);
