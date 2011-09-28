@@ -88,6 +88,7 @@ static int save_file(char *filename, struct sound *s, int channels)
 	}
 	sf_write_double(sf, s->data, s->nsamples);
 	sf_close(sf);
+	printf("Saved output in '%s'\n", filename);
 	return 0;
 }
 
