@@ -256,8 +256,7 @@ static struct sound *copy_sound(struct sound *s)
 
 	o = alloc_sound(s->nsamples);
 
-	for (i = 0; i < s->nsamples; i++)
-		o->data[i] = s->data[i];
+	memcpy(o->data, s->data, sizeof(o->data[0]) * s->nsamples);
 	o->nsamples = s->nsamples;
 	return o;
 }
@@ -327,12 +326,12 @@ static struct sound *poor_mans_reverb(struct sound *s,
 
 	for (i = 0; i < early_refls; i++) {
 		dot();
-		echo2 = sliding_low_pass(echo, 0.8, 0.8);
+		echo2 = sliding_low_pass(echo, 0.5, 0.5);
 		gain = (double) rand() / (double) RAND_MAX * 0.03 + 0.03;
 		amplify_in_place(echo, gain); 
 
-		/* 100 ms range */
-		delay = (4410 * (rand() & 0x0ffff)) / 0x0ffff;
+		/* 300 ms range */
+		delay = (3 * 4410 * (rand() & 0x0ffff)) / 0x0ffff;
 		delay_effect_in_place(echo2, delay);
 		accumulate_sound(withverb, echo2);
 		free_sound(echo2);
@@ -340,12 +339,12 @@ static struct sound *poor_mans_reverb(struct sound *s,
 
 	for (i = 0; i < late_refls; i++) {
 		dot();
-		echo2 = sliding_low_pass(echo, 0.7, 0.3);
+		echo2 = sliding_low_pass(echo, 0.5, 0.2);
 		gain = (double) rand() / (double) RAND_MAX * 0.01 + 0.03;
 		amplify_in_place(echo, gain); 
 
-		/* 1000 ms range */
-		delay = (44100 * (rand() & 0x0ffff)) / 0x0ffff;
+		/* 2000 ms range */
+		delay = (2 * 44100 * (rand() & 0x0ffff)) / 0x0ffff;
 		delay_effect_in_place(echo2, delay);
 		accumulate_sound(withverb, echo2);
 		free_sound(echo2);
