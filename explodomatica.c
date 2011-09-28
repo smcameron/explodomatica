@@ -395,6 +395,16 @@ static struct sound *make_explosion(double seconds, int nlayers)
 	return s[0];
 }
 
+static void trim_trailing_silence(struct sound *s)
+{
+	int i;
+
+	for (i = s->nsamples -1 ; i >= 0; i--) {
+		if (fabs(s->data[i]) < 0.00001)
+			s->nsamples--;
+	}
+}
+
 int main(int argc, char *argv[])
 {
 	struct sound *s, *s2;
@@ -407,7 +417,9 @@ int main(int argc, char *argv[])
 		usage();
 	s = make_explosion(4.0, 4);
 	change_speed_inplace(s, 0.25);
+	trim_trailing_silence(s);
 	s2 = poor_mans_reverb(s, 10, 20);
+	trim_trailing_silence(s2);
 	save_file(argv[1], s2, 1);
 	free_sound(s);
 
