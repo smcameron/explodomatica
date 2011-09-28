@@ -149,7 +149,7 @@ static struct sound *make_noise(int nsamples)
 	struct sound *s;
 
 	s = alloc_sound(nsamples);
-	for (i = 0; i < nsamples; i += 2) {
+	for (i = 0; i < nsamples; i++) {
 		s->data[i] = (2.0 * (double) rand() / (double) RAND_MAX) - 1.0;
 		s->nsamples++;
 	}
