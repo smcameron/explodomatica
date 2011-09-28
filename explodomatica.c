@@ -25,17 +25,19 @@
 #include <malloc.h>
 #include <math.h>
 #include <stdlib.h>
+#include <sys/time.h>
 
 #include <sndfile.h> /* libsndfile */
 
 #define SAMPLERATE 44100
+#define ARRAYSIZE(x) (sizeof(x) / sizeof((x)[0]))
 
 struct sound {
 	double *data;
 	int nsamples;
 };
 
-usage()
+void usage(void)
 {
 	fprintf(stderr, "usage:\n");
 	fprintf(stderr, "explodomatica somefile.wav\n");
@@ -51,13 +53,13 @@ static void free_sound(struct sound *s)
 	s->nsamples = 0;
 }
 
-static struct sound *alloc_sound(int nframes)
+static struct sound *alloc_sound(int nsamples)
 {
 	struct sound *s;
 
 	s = malloc(sizeof(*s));
-	s->data = malloc(sizeof(*s->data) * nframes * 2);
-	memset(s->data, 0, sizeof(*s->data) * nframes * 2);
+	s->data = malloc(sizeof(*s->data) * nsamples);
+	memset(s->data, 0, sizeof(*s->data) * nsamples);
 	s->nsamples = 0;
 	return s;
 }
@@ -67,14 +69,14 @@ int seconds_to_frames(double seconds)
 	return seconds * SAMPLERATE;
 }
 
-static int save_file(char *filename, struct sound *s)
+static int save_file(char *filename, struct sound *s, int channels)
 {
 	SNDFILE *sf;
 	SF_INFO sfinfo;
 
 	sfinfo.frames = 0;
 	sfinfo.samplerate = SAMPLERATE;
-	sfinfo.channels = 2;
+	sfinfo.channels = channels;
 	sfinfo.format = SF_FORMAT_WAV | SF_FORMAT_PCM_16;
 	sfinfo.sections = 0;
 	sfinfo.seekable = 1;
@@ -89,16 +91,16 @@ static int save_file(char *filename, struct sound *s)
 	return 0;
 }
 
-static struct sound *make_sinewave(int nframes, double frequency)
+static struct sound *make_sinewave(int nsamples, double frequency)
 {
 	int i;
 	double theta = 0.0;
 	double delta = frequency * 2.0 * 3.1415927 / 44100.0;
 	struct sound *s;
 
-	s = alloc_sound(nframes);
+	s = alloc_sound(nsamples);
 
-	for (i = 0; i < nframes * 2; i++) {
+	for (i = 0; i < nsamples; i++) {
 		s->data[i] = sin(theta) * 0.5;
 		theta += delta;
 		s->nsamples++;
@@ -140,14 +142,14 @@ static void accumulate_sound(struct sound *acc, struct sound *inc)
 	acc->nsamples = t->nsamples;
 }
 
-static struct sound *make_noise(int nframes)
+static struct sound *make_noise(int nsamples)
 {
 	int i;
 	struct sound *s;
 
-	s = alloc_sound(nframes);
-	for (i = 0; i < nframes * 2; i++) {
-		s->data[i] = (1.0 * (double) rand() / (double) RAND_MAX) - 1.0;
+	s = alloc_sound(nsamples);
+	for (i = 0; i < nsamples; i += 2) {
+		s->data[i] = (2.0 * (double) rand() / (double) RAND_MAX) - 1.0;
 		s->nsamples++;
 	}
 	return s;
@@ -167,27 +169,37 @@ static void fadeout(struct sound *s, int nsamples)
 /* algorithm for low pass filter gleaned from wikipedia
  * and adapted for stereo samples
  */
-static struct sound *low_pass(struct sound *s, double RC)
+static struct sound *sliding_low_pass(struct sound *s,
+	double alpha1, double alpha2)
 {
 	int i;
 	struct sound *o;
-	double dt = (1.0 / (double) SAMPLERATE);
-	double alpha = dt / (RC + dt);
+	double alpha;
 
 	o = malloc(sizeof(*o));
 	o->data = malloc(sizeof(*o->data) * s->nsamples);
 
 	o->data[0] = s->data[0];
-	o->data[1] = s->data[1];
 
-	for (i = 2; i < s->nsamples;) {
-		o->data[i] = o->data[i - 2] + alpha * (s->data[i] - o->data[i - 2]);
-		i++;
-		o->data[i] = o->data[i - 2] + alpha * (s->data[i] - o->data[i - 2]);
+	for (i = 1; i < s->nsamples;) {
+		alpha = ((double) i / (double) s->nsamples) *
+			(alpha2 - alpha1) + alpha1;
+		alpha = alpha * alpha;
+		o->data[i] = o->data[i - 1] + alpha * (s->data[i] - o->data[i - 1]);
 		i++;
 	}
 	o->nsamples = s->nsamples;
 	return o;
+}
+
+static void sliding_low_pass_inplace(struct sound *s, double alpha1, double alpha2)
+{
+	struct sound *o;
+
+	o = sliding_low_pass(s, alpha1, alpha2);
+	free_sound(s);
+	s->data = o->data;
+	s->nsamples = o->nsamples;
 }
 
 static double interpolate(double x, double x1, double y1, double x2, double y2)
@@ -197,55 +209,51 @@ static double interpolate(double x, double x1, double y1, double x2, double y2)
 	 * (x -x1) * (y2 -y1)/(x2 -x1) = y - y1         a little algebra...
 	 * y = (x - x1) * (y2 - y1) / (x2 -x1) + y1;
 	 */
-	if (abs(x2 - x1) < (0.01 * 1.0 / SAMPLERATE))
-		return y1;
+	if (fabs(x2 - x1) < (0.01 * 1.0 / (double) SAMPLERATE))
+		return (y1 + y2) / 2.0;
 	return (x - x1) * (y2 - y1) / (x2 -x1) + y1;
 }
 
 static struct sound *change_speed(struct sound *s, double factor)
 {
 	struct sound *o;
-	int i, nframes;
+	int i, nsamples;
 	double sample_point;
 	int sp1, sp2;
 
-	nframes = (int) ((s->nsamples / 2) / factor);
-	o = alloc_sound(nframes);
+	nsamples = (int) (s->nsamples / factor);
+	o = alloc_sound(nsamples);
 
 	o->data[0] = s->data[0];
-	o->data[1] = s->data[1];
-	o->nsamples = 2;
+	o->nsamples = 1;
 
-	for (i = 2; i < nframes;) {
-		sample_point = (double) i / (double) nframes * (double) s->nsamples;
+	for (i = 1; i < nsamples; i++) {
+		sample_point = (double) i / (double) nsamples * (double) s->nsamples;
 		sp1 = (int) sample_point;
-		if ((sp1 % 2) != 0)
-			sp1--;
-		sp2 = sp1 + 2;
+		sp2 = sp1 + 1;
 		o->data[i] = interpolate(sample_point, (double) sp1, s->data[sp1], 
 						(double) sp2, s->data[sp2]);
-		o->nsamples++;
-		i++;
-		sample_point = (double) i / (double) nframes * (double) s->nsamples;
-		sp1 = (int) sample_point;
-		if ((sp1 % 2) != 1)
-			sp1--;
-		sp2 = sp1 + 2;
-		o->data[i] = interpolate(sample_point, (double) sp1, s->data[sp1], 
-						(double) sp2, s->data[sp2]);
-		i++;
 		o->nsamples++;
 	}
 	return o;
 }
 
+static void change_speed_inplace(struct sound *s, double factor)
+{
+	struct sound *o;
+
+	o = change_speed(s, factor);
+	free_sound(s);
+	s->data = o->data;
+	s->nsamples = o->nsamples;
+}
+
 static struct sound *copy_sound(struct sound *s)
 {
 	struct sound *o;
-	int i, nframes;
+	int i;
 
-	nframes = (int) (s->nsamples / 2);
-	o = alloc_sound(nframes);
+	o = alloc_sound(s->nsamples);
 
 	for (i = 0; i < s->nsamples; i++)
 		o->data[i] = s->data[i];
@@ -256,69 +264,68 @@ static struct sound *copy_sound(struct sound *s)
 static void renormalize(struct sound *s)
 {
 	int i;
-	double max = 0;
+	double max = 0.0;
 
 	for (i = 0; i < s->nsamples; i++)
-		if (abs(s->data[i]) > max)
-			max = abs(s->data[i]);
+		if (fabs(s->data[i]) > max)
+			max = fabs(s->data[i]);
 	for (i = 0; i < s->nsamples; i++)
-		s->data[i] = s->data[i] / max;
+		s->data[i] = s->data[i] / (1.001 * max);
 }
 
 static struct sound *make_explosion(double seconds, int nlayers)
 {
 	struct sound *s[10];
-	struct sound *t, *t2;
-	double RC;
-	double rc[] = { 25.0, 19.0, 10.0, 3.0};
-	int i;
-
-	if (nlayers > 4)
-		nlayers = 4;
-	if (nlayers < 1)
-		nlayers = 1;
+	struct sound *t = NULL;
+	double a1, a2;
+	int i, j, iters;
 
 	for (i = 0; i < nlayers; i++) {
-		double speedfactor;
 		t = make_noise(seconds_to_frames(seconds));
-		fadeout(t, t->nsamples);
-		t2 = low_pass(t, rc[i] / (double) SAMPLERATE);
-		speedfactor = (double) i + 1.0;
-		s[i] = change_speed(t2, speedfactor);
-		free_sound(t);
-		free_sound(t2);
+
+		if (i > 0) 
+			change_speed_inplace(t, i * 2);
+
+		iters = i + 1;
+		if (iters > 3)
+			iters = 3;
+		for (j = 0; j < iters; j++)
+			fadeout(t, t->nsamples);
+
+		a1 = (double) (i + 1) / (double) nlayers;
+		a2 = (double) i / (double) nlayers;
+
+		iters = 3 - i; 
+		if (iters < 0)
+			iters = 1;	
+		for (j = 0; j < iters; j++) {
+			sliding_low_pass_inplace(t, a1, a2);
+			renormalize(t);
+		}
+		s[i] = t;
 	}
 
 	for (i = 1; i < nlayers; i++) {
 		accumulate_sound(s[0], s[i]);
-		renormalize(s[0]);
 		free_sound(s[i]);
 	}
-
+	renormalize(s[0]);
 	return s[0];
 }
 
 int main(int argc, char *argv[])
 {
-	struct sound *s, *s2, *s3, *s4, *s5;
+	struct sound *s;
+	struct timeval tv;
+
+	gettimeofday(&tv, NULL);
+	srand(tv.tv_usec);
 
 	if (argc < 2)
 		usage();
-
-#if 0
-	s = make_sinewave(seconds_to_frames(2), 120); 
-	s = make_noise(seconds_to_frames(2));
-	s2 = make_sinewave(seconds_to_frames(10), 261);
-	s4 = make_sinewave(seconds_to_frames(10), 120);
-	s3 = add_sound(s2, s4);	
-	fadeout(s3, s3->nsamples);
-	fadeout(s, s->nsamples);
-	fadeout(s, s->nsamples);
-	s5 = low_pass(s, 12.0 / SAMPLERATE); 
-	s2 = change_speed(s, 2.0);
-#endif
-	s = make_explosion(5.0, 4);
-	save_file(argv[1], s);
+	s = make_explosion(4.0, 4);
+	change_speed_inplace(s, 0.25);
+	save_file(argv[1], s, 1);
 	free_sound(s);
 
 	return 0;
