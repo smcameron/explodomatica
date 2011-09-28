@@ -252,7 +252,6 @@ static void change_speed_inplace(struct sound *s, double factor)
 static struct sound *copy_sound(struct sound *s)
 {
 	struct sound *o;
-	int i;
 
 	o = alloc_sound(s->nsamples);
 
