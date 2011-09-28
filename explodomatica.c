@@ -273,6 +273,88 @@ static void renormalize(struct sound *s)
 		s->data[i] = s->data[i] / (1.001 * max);
 }
 
+static void amplify_in_place(struct sound *s, double gain)
+{
+	int i;
+
+	for (i = 0; i < s->nsamples; i++) {
+		s->data[i] = s->data[i] * gain;
+		if (s->data[i] > 1.0)
+			s->data[i] = 1.0;
+	}
+}
+
+static void delay_effect_in_place(struct sound *s, int delay_samples)
+{
+	int i, source;
+
+	for (i = s->nsamples - 1; i >= 0; i--) {
+		source = i - delay_samples;
+		if (s->nsamples > source) {
+			if (source > 0) {
+				s->data[i] = s->data[source];
+			} else {
+				s->data[i] = 0.0;
+			}
+		}
+	}
+}
+
+static struct sound *poor_mans_reverb(struct sound *s,
+	int early_refls, int late_refls)
+{
+	int i, delay;
+	struct sound *echo, *echo2;
+	struct sound *withverb;
+	double gain;
+
+	printf("1\n");
+	withverb = alloc_sound(s->nsamples * 2);
+	for (i = 0; i < s->nsamples; i++)
+		withverb->data[i] = s->data[i];
+	printf("2\n");
+	withverb->nsamples = s->nsamples * 2;
+	echo = copy_sound(withverb);
+
+	for (i = 0; i < early_refls; i++) {
+		printf("3, i = %d\n", i);
+		echo2 = sliding_low_pass(echo, 0.8, 0.8);
+		gain = (double) rand() / (double) RAND_MAX * 0.05 + 0.03;
+		printf("4, i = %d\n", i);
+		amplify_in_place(echo, gain); 
+		printf("5, i = %d\n", i);
+
+		/* 100 ms range */
+		delay = (4410 * (rand() & 0x0ffff)) / 0x0ffff;
+		printf("6, i = %d\n", i);
+		delay_effect_in_place(echo2, delay);
+		printf("7, i = %d\n", i);
+		accumulate_sound(withverb, echo2);
+		printf("8, i = %d\n", i);
+		free_sound(echo2);
+	}
+
+	for (i = 0; i < late_refls; i++) {
+		printf("9, i = %d\n", i);
+		echo2 = sliding_low_pass(echo, 0.7, 0.3);
+		gain = (double) rand() / (double) RAND_MAX * 0.03 + 0.03;
+		printf("10, i = %d\n", i);
+		amplify_in_place(echo, gain); 
+		printf("11, i = %d\n", i);
+
+		/* 1000 ms range */
+		delay = (44100 * (rand() & 0x0ffff)) / 0x0ffff;
+		printf("12, i = %d\n", i);
+		delay_effect_in_place(echo2, delay);
+		printf("13, i = %d\n", i);
+		accumulate_sound(withverb, echo2);
+		printf("14, i = %d\n", i);
+		free_sound(echo2);
+	}
+	printf("15, i = %d\n", i);
+	return withverb;
+}
+
 static struct sound *make_explosion(double seconds, int nlayers)
 {
 	struct sound *s[10];
@@ -315,7 +397,7 @@ static struct sound *make_explosion(double seconds, int nlayers)
 
 int main(int argc, char *argv[])
 {
-	struct sound *s;
+	struct sound *s, *s2;
 	struct timeval tv;
 
 	gettimeofday(&tv, NULL);
@@ -325,7 +407,8 @@ int main(int argc, char *argv[])
 		usage();
 	s = make_explosion(4.0, 4);
 	change_speed_inplace(s, 0.25);
-	save_file(argv[1], s, 1);
+	s2 = poor_mans_reverb(s, 10, 20);
+	save_file(argv[1], s2, 1);
 	free_sound(s);
 
 	return 0;
