@@ -32,12 +32,18 @@
 struct explosion_def {
 	double duration;
 	int nlayers;
+	int preexplosions;
+	double preexplosion_delay;
+	double preexplosion_low_pass_factor;
 	double final_speed_factor;
 	int reverb_early_refls;
 	int reverb_late_refls;
 } e = {
 	4.0,	/* duration in seconds (roughly) */
 	4,	/* nlayers */
+	1,	/* preexplosions */
+	0.2,	/* preexplosion delay, 200ms */
+	0.5,	/* preexplosion low pass factor */
 	0.25,	/* final speed factor */
 	10,	/* final reverb early reflections */
 	50,	/* final reverb late reflections */
@@ -62,6 +68,11 @@ void usage(void)
 static double drand(void)
 {
 	return (double) rand() / (double) RAND_MAX;
+}
+
+static int irand(int n)
+{
+	return (n * (rand() & 0x0ffffff)) / 0x0ffffff;
 }
 
 static void free_sound(struct sound *s)
@@ -421,9 +432,37 @@ static void trim_trailing_silence(struct sound *s)
 	}
 }
 
+static struct sound *make_preexplosions(struct explosion_def *e)
+{
+	struct sound *pe;
+	int i;
+
+	if (!e->preexplosions)
+		return NULL;
+
+	pe = alloc_sound(seconds_to_frames(e->duration));
+	pe->nsamples = seconds_to_frames(e->duration);
+	for (i = 0; i < e->preexplosions; i++) {
+		struct sound *exp;
+		int offset;
+		exp = make_explosion(e->duration / 2, e->nlayers);
+
+		offset = irand(seconds_to_frames(e->preexplosion_delay));
+		delay_effect_in_place(exp, offset);
+		accumulate_sound(pe, exp);
+		renormalize(pe);
+		free_sound(exp);
+	}
+	sliding_low_pass_inplace(pe,
+		e->preexplosion_low_pass_factor,
+		e->preexplosion_low_pass_factor);
+	renormalize(pe);
+	return pe;
+}
+
 int main(int argc, char *argv[])
 {
-	struct sound *s, *s2;
+	struct sound *pe, *s, *s2;
 	struct timeval tv;
 
 	gettimeofday(&tv, NULL);
@@ -431,7 +470,13 @@ int main(int argc, char *argv[])
 
 	if (argc < 2)
 		usage();
+
+	pe = make_preexplosions(&e);
 	s = make_explosion(e.duration, e.nlayers);
+	if (pe) {
+		accumulate_sound(s, pe);
+		renormalize(s);
+	}
 	change_speed_inplace(s, e.final_speed_factor);
 	trim_trailing_silence(s);
 	s2 = poor_mans_reverb(s, e.reverb_early_refls, e.reverb_late_refls);
