@@ -79,6 +79,11 @@ void usage(void)
 	fprintf(stderr, "  --preexplosions n\n");
 	fprintf(stderr, "                  Specifies number of 'pre-explostions' to generate\n");
 	fprintf(stderr, "                  Default is %d\n", defaults.preexplosions);
+	fprintf(stderr, "  --pre-delay n\n");
+	fprintf(stderr, "                  Specifies approximate length of the 'ka' in 'ka-BOOM!'\n");
+	fprintf(stderr, "                  (it is somewhat randomized)\n");
+	fprintf(stderr, "                  Default is %f secs\n", defaults.preexplosion_delay);
+	
 	fprintf(stderr, "  --speedfactor n\n");
 	fprintf(stderr, "                  Amount to speed up (or slow down) the final\n");
 	fprintf(stderr, "                  explosion sound. Values greater than 1.0 speed\n");
@@ -496,6 +501,7 @@ static void process_options(int argc, char *argv[], struct explosion_def *e)
 		{"nlayers", 1, 0, 1},
 		{"preexplosions", 1, 0, 2},
 		{"speedfactor", 1, 0, 3},
+		{"pre-delay", 1, 0, 4},
 		{0, 0, 0, 0}
 	};
 
@@ -533,6 +539,13 @@ static void process_options(int argc, char *argv[], struct explosion_def *e)
 				usage();
 			e->final_speed_factor = dval;
 			printf("speedfactor = %g\n", dval);
+			break;
+		case 4: /* pre-delay */
+			n = sscanf(optarg, "%lg", &dval);
+			if (n != 1)
+				usage();
+			e->preexplosion_delay = dval;
+			printf("preexplosion_delay = %g\n", dval);
 			break;
 			
 		default:
