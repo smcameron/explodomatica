@@ -44,6 +44,7 @@ struct explosion_def {
 	double final_speed_factor;
 	int reverb_early_refls;
 	int reverb_late_refls;
+	int reverb; 
 } e, defaults = {
 	4.0,	/* duration in seconds (roughly) */
 	4,	/* nlayers */
@@ -54,6 +55,7 @@ struct explosion_def {
 	0.45,	/* final speed factor */
 	10,	/* final reverb early reflections */
 	50,	/* final reverb late reflections */
+	1,	/* reverb wanted? */
 };
 
 	
@@ -101,6 +103,7 @@ void usage(void)
 	fprintf(stderr, "                  explosion sound. Values greater than 1.0 speed\n");
 	fprintf(stderr, "                  the sound up, values less than 1.0 slow it down\n");
 	fprintf(stderr, "                  Default is %f\n", defaults.final_speed_factor);
+	fprintf(stderr, "  --noreverb      Suppress the 'reverb' effect\n");
 	exit(1);
 }
 
@@ -516,6 +519,7 @@ static void process_options(int argc, char *argv[], struct explosion_def *e)
 		{"pre-delay", 1, 0, 4},
 		{"pre-lp-factor", 1, 0, 5},
 		{"pre-lp-count", 1, 0, 6},
+		{"noreverb", 0, 0, 7},
 		{0, 0, 0, 0}
 	};
 
@@ -575,6 +579,10 @@ static void process_options(int argc, char *argv[], struct explosion_def *e)
 			printf("preexplosion low pass count = %d\n", ival);
 			e->preexplosion_lp_iters = ival;
 			break;
+		case 7: /* noreverb */
+			printf("noreverb selected\n");
+			e->reverb = 0;
+			break;
 			
 		default:
 			usage();
@@ -610,8 +618,12 @@ int main(int argc, char *argv[])
 	}
 	change_speed_inplace(s, e.final_speed_factor);
 	trim_trailing_silence(s);
-	s2 = poor_mans_reverb(s, e.reverb_early_refls, e.reverb_late_refls);
-	trim_trailing_silence(s2);
+	if (e.reverb) {
+		s2 = poor_mans_reverb(s, e.reverb_early_refls, e.reverb_late_refls);
+		trim_trailing_silence(s2);
+	} else {
+		s2 = copy_sound(s);
+	}
 	save_file(save_filename, s2, 1);
 	free_sound(s);
 
