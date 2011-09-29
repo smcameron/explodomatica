@@ -44,7 +44,7 @@ struct explosion_def {
 	double final_speed_factor;
 	int reverb_early_refls;
 	int reverb_late_refls;
-} e = {
+} e, defaults = {
 	4.0,	/* duration in seconds (roughly) */
 	4,	/* nlayers */
 	1,	/* preexplosions */
@@ -55,6 +55,7 @@ struct explosion_def {
 	10,	/* final reverb early reflections */
 	50,	/* final reverb late reflections */
 };
+
 	
 #define SAMPLERATE 44100
 #define ARRAYSIZE(x) (sizeof(x) / sizeof((x)[0]))
@@ -71,7 +72,10 @@ void usage(void)
 	fprintf(stderr, "caution: somefile.wav will be overwritten.\n");
 	fprintf(stderr, "options:\n");
 	fprintf(stderr, "  --duration n    Specifies duration of explosion in secs\n");
-	fprintf(stderr, "                  Default value is %f secs\n", e.duration);
+	fprintf(stderr, "                  Default value is %f secs\n",
+			defaults.duration);
+	fprintf(stderr, "  --nlayers n     Specifies number of sound layers to use\n");
+	fprintf(stderr, "                  to build up each explosion.  Default is %d\n", defaults.nlayers);
 	exit(1);
 }
 
@@ -476,17 +480,18 @@ static void process_options(int argc, char *argv[], struct explosion_def *e)
 {
 	int this_option_optind = optind ? optind : 1;
 	int option_index = 0;
-	int c, n;
+	int c, n, ival;
 	double dval;
 
 	static struct option long_options[] = {
 		{"duration", 1, 0, 0},
+		{"nlayers", 1, 0, 1},
 		{0, 0, 0, 0}
 	};
 
 	while (1) {
 
-		c = getopt_long(argc, argv, "d:",
+		c = getopt_long(argc, argv, "d:l:",
 			long_options, &option_index);
 		if (c == -1)
 			break;
@@ -498,6 +503,14 @@ static void process_options(int argc, char *argv[], struct explosion_def *e)
 			e->duration = dval;
 			printf("duration = %g\n", dval);
 			break;
+		case 1: /* nlayers */
+			n = sscanf(optarg, "%d", &ival);
+			if (n != 1)
+				usage();
+			printf("nlayers = %d\n", ival);
+			e->nlayers = ival;
+			break;
+			
 		default:
 			usage();
 		}
@@ -513,6 +526,8 @@ int main(int argc, char *argv[])
 {
 	struct sound *pe, *s, *s2;
 	struct timeval tv;
+
+	e = defaults;
 
 	gettimeofday(&tv, NULL);
 	srand(tv.tv_usec);
