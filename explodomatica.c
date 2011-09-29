@@ -76,6 +76,9 @@ void usage(void)
 			defaults.duration);
 	fprintf(stderr, "  --nlayers n     Specifies number of sound layers to use\n");
 	fprintf(stderr, "                  to build up each explosion.  Default is %d\n", defaults.nlayers);
+	fprintf(stderr, "  --preexplosions n\n");
+	fprintf(stderr, "                  Specifies number of 'pre-explostions' to generate\n");
+	fprintf(stderr, "                  Default is %d\n", defaults.preexplosions);
 	exit(1);
 }
 
@@ -486,12 +489,13 @@ static void process_options(int argc, char *argv[], struct explosion_def *e)
 	static struct option long_options[] = {
 		{"duration", 1, 0, 0},
 		{"nlayers", 1, 0, 1},
+		{"preexplosions", 1, 0, 2},
 		{0, 0, 0, 0}
 	};
 
 	while (1) {
 
-		c = getopt_long(argc, argv, "d:l:",
+		c = getopt_long(argc, argv, "d:l:p:",
 			long_options, &option_index);
 		if (c == -1)
 			break;
@@ -509,6 +513,13 @@ static void process_options(int argc, char *argv[], struct explosion_def *e)
 				usage();
 			printf("nlayers = %d\n", ival);
 			e->nlayers = ival;
+			break;
+		case 2: /* preexplosions */
+			n = sscanf(optarg, "%d", &ival);
+			if (n != 1)
+				usage();
+			printf("preexplosions = %d\n", ival);
+			e->preexplosions = ival;
 			break;
 			
 		default:
