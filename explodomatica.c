@@ -46,7 +46,7 @@ struct explosion_def {
 	0.25,	/* preexplosion delay, 250ms */
 	0.8,	/* preexplosion low pass factor */
 	1,	/* preexplosion low pass iters */
-	0.25,	/* final speed factor */
+	0.45,	/* final speed factor */
 	10,	/* final reverb early reflections */
 	50,	/* final reverb late reflections */
 };
@@ -175,6 +175,19 @@ static void accumulate_sound(struct sound *acc, struct sound *inc)
 	acc->nsamples = t->nsamples;
 }
 
+static void amplify_in_place(struct sound *s, double gain)
+{
+	int i;
+
+	for (i = 0; i < s->nsamples; i++) {
+		s->data[i] = s->data[i] * gain;
+		if (s->data[i] > 1.0)
+			s->data[i] = 1.0;
+		if (s->data[i] < -1.0)
+			s->data[i] = -1.0;
+	}
+}
+
 static struct sound *make_noise(int nsamples)
 {
 	int i;
@@ -185,6 +198,7 @@ static struct sound *make_noise(int nsamples)
 		s->data[i] = 2.0 * drand() - 1.0;
 		s->nsamples++;
 	}
+	amplify_in_place(s, 0.70);
 	return s;
 }
 
@@ -301,20 +315,7 @@ static void renormalize(struct sound *s)
 		if (fabs(s->data[i]) > max)
 			max = fabs(s->data[i]);
 	for (i = 0; i < s->nsamples; i++)
-		s->data[i] = s->data[i] / (1.001 * max);
-}
-
-static void amplify_in_place(struct sound *s, double gain)
-{
-	int i;
-
-	for (i = 0; i < s->nsamples; i++) {
-		s->data[i] = s->data[i] * gain;
-		if (s->data[i] > 1.0)
-			s->data[i] = 1.0;
-		if (s->data[i] < -1.0)
-			s->data[i] = -1.0;
-	}
+		s->data[i] = s->data[i] / (1.05 * max);
 }
 
 static void delay_effect_in_place(struct sound *s, int delay_samples)
