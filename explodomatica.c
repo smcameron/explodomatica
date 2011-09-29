@@ -526,7 +526,7 @@ static void process_options(int argc, char *argv[], struct explosion_def *e)
 			usage();
 		}
 	}
-	if (option_index < argc) {
+	if (optind < argc) {
 		strcpy(save_filename, argv[optind]);
 		printf("save filename is %s\n", save_filename);
 	} else
