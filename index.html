@@ -16,10 +16,6 @@ something similar to the process which I came up
 ith and documented in this video:<br>
 <p align=center><iframe width="420" height="315" src="http://www.youtube.com/embed/u3KHg2AwpMM" frameborder="0" allowfullscreen></iframe>
 
-<p>Explodomatica doesn't work very well yet.  It does make explosion
-sounds, but it isn't parameterized and it still has a lot of work
-before it's all that useful.
-
 <p>Here is the information you need to get it from github:
 <a href="http://github.com/smcameron/explodomatica">Explodomatica github page</a>.
 
@@ -28,5 +24,74 @@ any later version).
 
 <p>It relies on libsndfile to write .wav files (see: 
 <a href="http://www.mega-nerd.com/libsndfile/">http://www.mega-nerd.com/libsndfile/</a>)
+
+<p>Here is the man page:
+<pre>
+EXPLODOMATICA(1)		 User Commands		      EXPLODOMATICA(1)
+
+
+
+NAME
+       explodomatica - generate explosion sound effects
+
+SYNOPSIS
+       explodomatica [OPTION]... [FILE]
+
+DESCRIPTION
+       An  explosion  sound effect is generated, and saved as mono 44100Hz PCM
+       data in the specified wav file.
+
+       -d, --duration
+	      Specifies the approximate  duration  in  seconds	the  explosion
+	      should last.  Fractional seconds are permitted.
+
+       -l, --nlayers
+	      Specifies  the  number  of  sound layers which should be used to
+	      create each sub-explosion within the explosion.
+
+       -p, --preexplosions
+	      Specifies the number of "preexplosions" to  generate.   You  can
+	      think of the "preexplosions" as the "ka" part of "ka-BOOM!"
+
+       --pre-delay
+	      Specifies  the  approximate duration in seconds of the "ka" part
+	      of "ka-BOOM!".  Default is 0.25 seconds.	The value is  somewhat
+	      randomized  and this value is more like an upper bound with zero
+	      being the lower bound.
+
+       --pre-lp-factor
+	      Specifies the factor to use with the low pass filter on the pre-
+	      explosion.   Values  closer  to  zero do more (suppress the pre-
+	      explosion more) while values closer to 1 do less.
+
+       --pre-lp-iters
+	      Specifies how many times to apply the low  pass  filter  to  the
+	      pre-explosion.  Default is 1.
+
+       -s, --speedfactor
+	      Specifies the factor by which to speed up or slow down the final
+	      explosion sound.	Values greater than 1.0 speed  the  sound  up,
+	      values less than 1.0 slow the sound down.  The default is 0.45.
+
+EXAMPLES
+       explodomatica --duration 2 --preexplosions 0 --nlayers 3 test.wav
+
+SEE ALSO
+       &lt;http://scameron.github.com/explodomatica&gt;
+
+AUTHOR
+       Written by Stephen M. Cameron
+
+COPYRIGHT
+       Copyright  2011 Stephen M. Cameron.
+       License GPLv2+: GNU GPL version 2 or later
+       &lt;http://gnu.org/licenses/gpl.html&gt;.
+       This  is  free  software:  you  are free to change and redistribute it.
+       There is NO WARRANTY, to the extent permitted by law.
+
+
+
+Explodomatica			September 2011		      EXPLODOMATICA(1)
+</pre>
 </body>
 </html>
