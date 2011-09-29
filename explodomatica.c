@@ -79,6 +79,11 @@ void usage(void)
 	fprintf(stderr, "  --preexplosions n\n");
 	fprintf(stderr, "                  Specifies number of 'pre-explostions' to generate\n");
 	fprintf(stderr, "                  Default is %d\n", defaults.preexplosions);
+	fprintf(stderr, "  --speedfactor n\n");
+	fprintf(stderr, "                  Amount to speed up (or slow down) the final\n");
+	fprintf(stderr, "                  explosion sound. Values greater than 1.0 speed\n");
+	fprintf(stderr, "                  the sound up, values less than 1.0 slow it down\n");
+	fprintf(stderr, "                  Default is %f\n", defaults.final_speed_factor);
 	exit(1);
 }
 
@@ -490,12 +495,13 @@ static void process_options(int argc, char *argv[], struct explosion_def *e)
 		{"duration", 1, 0, 0},
 		{"nlayers", 1, 0, 1},
 		{"preexplosions", 1, 0, 2},
+		{"speedfactor", 1, 0, 3},
 		{0, 0, 0, 0}
 	};
 
 	while (1) {
 
-		c = getopt_long(argc, argv, "d:l:p:",
+		c = getopt_long(argc, argv, "d:l:p:s:",
 			long_options, &option_index);
 		if (c == -1)
 			break;
@@ -520,6 +526,13 @@ static void process_options(int argc, char *argv[], struct explosion_def *e)
 				usage();
 			printf("preexplosions = %d\n", ival);
 			e->preexplosions = ival;
+			break;
+		case 3: /* speedfactor */
+			n = sscanf(optarg, "%lg", &dval);
+			if (n != 1)
+				usage();
+			e->final_speed_factor = dval;
+			printf("speedfactor = %g\n", dval);
 			break;
 			
 		default:

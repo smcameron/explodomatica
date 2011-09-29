@@ -22,6 +22,12 @@ to create each sub-explosion within the explosion.
 Specifies the number of "preexplosions" to generate.
 You can think of the "preexplosions" as the "ka" part
 of "ka-BOOM!"
+.TP
+\fB\-s\fR, \fB\-\-speedfactor\fR
+Specifies the factor by which to speed up or slow down
+the final explosion sound.  Values greater than 1.0 speed
+the sound up, values less than 1.0 slow the sound down.
+The default is 0.45.
 .SH EXAMPLES
 .TP
 explodomatica --duration 2 --preexplosions 0 --nlayers 3 test.wav
