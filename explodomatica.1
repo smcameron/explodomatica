@@ -1,0 +1,40 @@
+.TH EXPLODOMATICA "1" "September 2011" "Explodomatica" "User Commands"
+.SH NAME
+explodomatica \- generate explosion sound effects 
+.SH SYNOPSIS
+.B explodomatica 
+[\fIOPTION\fR]... [\fIFILE\fR]
+.SH DESCRIPTION
+.\" Add any additional description here
+.PP
+An explosion sound effect is generated, and saved as mono 44100Hz
+PCM data in the specified wav file.
+.TP
+\fB\-d\fR, \fB\-\-duration\fR
+Specifies the approximate duration in seconds the explosion
+should last.  Fractional seconds are permitted.
+.TP
+\fB\-l\fR, \fB\-\-nlayers\fR
+Specifies the number of sound layers which should be used
+to create each sub-explosion within the explosion.
+.TP
+\fB\-p\fR, \fB\-\-preexplosions\fR
+Specifies the number of "preexplosions" to generate.
+You can think of the "preexplosions" as the "ka" part
+of "ka-BOOM!"
+.SH EXAMPLES
+.TP
+explodomatica --duration 2 --preexplosions 0 --nlayers 3 test.wav
+.SH SEE ALSO
+<http://scameron.github.com/explodomatica>
+.SH AUTHOR
+Written by Stephen M. Cameron
+.SH COPYRIGHT
+Copyright \(co 2011 Stephen M. Cameron.
+.br
+License GPLv2+: GNU GPL version 2 or later
+.br
+<http://gnu.org/licenses/gpl.html>.
+.br
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
