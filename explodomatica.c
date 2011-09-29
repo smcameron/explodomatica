@@ -83,6 +83,18 @@ void usage(void)
 	fprintf(stderr, "                  Specifies approximate length of the 'ka' in 'ka-BOOM!'\n");
 	fprintf(stderr, "                  (it is somewhat randomized)\n");
 	fprintf(stderr, "                  Default is %f secs\n", defaults.preexplosion_delay);
+	fprintf(stderr, "  --pre-lp-factor n\n");
+	fprintf(stderr, "                  Specifies the impact of the low pass filter used\n");
+	fprintf(stderr, "                  on the pre-explosion part of the sound.  values\n");
+	fprintf(stderr, "                  closer to zero lower the cutoff frequency\n");
+	fprintf(stderr, "                  while values close to one raise it.\n");
+	fprintf(stderr, "                  Value should be between 0.2 and 0.9.\n");
+	fprintf(stderr, "                  Default is %f\n", defaults.preexplosion_low_pass_factor);
+	fprintf(stderr, "  --pre-lp-count n\n");
+	fprintf(stderr, "                  Specifies the number of times the low pass filter used\n");
+	fprintf(stderr, "                  on the pre-explosion part of the sound.  values\n");
+
+	fprintf(stderr, "                  Default is %f\n", defaults.preexplosion_lp_iters);
 	
 	fprintf(stderr, "  --speedfactor n\n");
 	fprintf(stderr, "                  Amount to speed up (or slow down) the final\n");
@@ -502,6 +514,8 @@ static void process_options(int argc, char *argv[], struct explosion_def *e)
 		{"preexplosions", 1, 0, 2},
 		{"speedfactor", 1, 0, 3},
 		{"pre-delay", 1, 0, 4},
+		{"pre-lp-factor", 1, 0, 5},
+		{"pre-lp-count", 1, 0, 6},
 		{0, 0, 0, 0}
 	};
 
@@ -546,6 +560,20 @@ static void process_options(int argc, char *argv[], struct explosion_def *e)
 				usage();
 			e->preexplosion_delay = dval;
 			printf("preexplosion_delay = %g\n", dval);
+			break;
+		case 5: /* pre-lp-factor */
+			n = sscanf(optarg, "%lg", &dval);
+			if (n != 1)
+				usage();
+			e->preexplosion_low_pass_factor = dval;
+			printf("preexplosion_low_pass_factor = %g\n", dval);
+			break;
+		case 6: /* preexplosion_lp_iters */
+			n = sscanf(optarg, "%d", &ival);
+			if (n != 1)
+				usage();
+			printf("preexplosion low pass count = %d\n", ival);
+			e->preexplosion_lp_iters = ival;
 			break;
 			
 		default:

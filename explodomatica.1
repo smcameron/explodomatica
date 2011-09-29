@@ -30,6 +30,16 @@ The value is somewhat randomized and this value is
 more like an upper bound with zero being the lower
 bound.
 .TP
+\fB\-\-pre-lp-factor\fR
+Specifies the factor to use with the low pass filter
+on the pre-explosion.  Values closer to zero do more
+(suppress the pre-explosion more) while values closer
+to 1 do less.
+.TP
+\fB\-\-pre-lp-iters\fR
+Specifies how many times to apply the low pass filter
+to the pre-explosion.  Default is 1.
+.TP
 \fB\-s\fR, \fB\-\-speedfactor\fR
 Specifies the factor by which to speed up or slow down
 the final explosion sound.  Values greater than 1.0 speed
