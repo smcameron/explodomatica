@@ -20,14 +20,19 @@
 
  */
 #include <stdio.h>
+#include <unistd.h>
 #include <string.h>
 #include <errno.h>
 #include <malloc.h>
 #include <math.h>
 #include <stdlib.h>
 #include <sys/time.h>
+#include <getopt.h>
+#include <limits.h>
 
 #include <sndfile.h> /* libsndfile */
+
+char save_filename[PATH_MAX + 1];
 
 struct explosion_def {
 	double duration;
@@ -62,8 +67,11 @@ struct sound {
 void usage(void)
 {
 	fprintf(stderr, "usage:\n");
-	fprintf(stderr, "explodomatica somefile.wav\n");
+	fprintf(stderr, "explodomatica [options] somefile.wav\n");
 	fprintf(stderr, "caution: somefile.wav will be overwritten.\n");
+	fprintf(stderr, "options:\n");
+	fprintf(stderr, "  --duration n    Specifies duration of explosion in secs\n");
+	fprintf(stderr, "                  Default value is %f secs\n", e.duration);
 	exit(1);
 }
 
@@ -464,6 +472,43 @@ static struct sound *make_preexplosions(struct explosion_def *e)
 	return pe;
 }
 
+static void process_options(int argc, char *argv[], struct explosion_def *e)
+{
+	int this_option_optind = optind ? optind : 1;
+	int option_index = 0;
+	int c, n;
+	double dval;
+
+	static struct option long_options[] = {
+		{"duration", 1, 0, 0},
+		{0, 0, 0, 0}
+	};
+
+	while (1) {
+
+		c = getopt_long(argc, argv, "d:",
+			long_options, &option_index);
+		if (c == -1)
+			break;
+		switch (c) {
+		case 0: /* duration */
+			n = sscanf(optarg, "%lg", &dval);
+			if (n != 1)
+				usage();
+			e->duration = dval;
+			printf("duration = %g\n", dval);
+			break;
+		default:
+			usage();
+		}
+	}
+	if (option_index < argc) {
+		strcpy(save_filename, argv[optind]);
+		printf("save filename is %s\n", save_filename);
+	} else
+		usage();
+}
+
 int main(int argc, char *argv[])
 {
 	struct sound *pe, *s, *s2;
@@ -475,6 +520,8 @@ int main(int argc, char *argv[])
 	if (argc < 2)
 		usage();
 
+	process_options(argc, argv, &e);
+
 	pe = make_preexplosions(&e);
 	s = make_explosion(e.duration, e.nlayers);
 	if (pe) {
@@ -485,7 +532,7 @@ int main(int argc, char *argv[])
 	trim_trailing_silence(s);
 	s2 = poor_mans_reverb(s, e.reverb_early_refls, e.reverb_late_refls);
 	trim_trailing_silence(s2);
-	save_file(argv[1], s2, 1);
+	save_file(save_filename, s2, 1);
 	free_sound(s);
 
 	return 0;
