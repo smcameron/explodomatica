@@ -45,6 +45,11 @@ void usage(void)
 	exit(1);
 }
 
+static double drand(void)
+{
+	return (double) rand() / (double) RAND_MAX;
+}
+
 static void free_sound(struct sound *s)
 {
 	if (s->data)
@@ -147,10 +152,10 @@ static struct sound *make_noise(int nsamples)
 {
 	int i;
 	struct sound *s;
-
 	s = alloc_sound(nsamples);
+
 	for (i = 0; i < nsamples; i++) {
-		s->data[i] = (2.0 * (double) rand() / (double) RAND_MAX) - 1.0;
+		s->data[i] = 2.0 * drand() - 1.0;
 		s->nsamples++;
 	}
 	return s;
@@ -326,7 +331,7 @@ static struct sound *poor_mans_reverb(struct sound *s,
 	for (i = 0; i < early_refls; i++) {
 		dot();
 		echo2 = sliding_low_pass(echo, 0.5, 0.5);
-		gain = (double) rand() / (double) RAND_MAX * 0.03 + 0.03;
+		gain = drand() * 0.03 + 0.03;
 		amplify_in_place(echo, gain); 
 
 		/* 300 ms range */
@@ -339,7 +344,7 @@ static struct sound *poor_mans_reverb(struct sound *s,
 	for (i = 0; i < late_refls; i++) {
 		dot();
 		echo2 = sliding_low_pass(echo, 0.5, 0.2);
-		gain = (double) rand() / (double) RAND_MAX * 0.01 + 0.03;
+		gain = drand() * 0.01 + 0.03;
 		amplify_in_place(echo, gain); 
 
 		/* 2000 ms range */
