@@ -29,6 +29,20 @@
 
 #include <sndfile.h> /* libsndfile */
 
+struct explosion_def {
+	double duration;
+	int nlayers;
+	double final_speed_factor;
+	int reverb_early_refls;
+	int reverb_late_refls;
+} e = {
+	4.0,	/* duration in seconds (roughly) */
+	4,	/* nlayers */
+	0.25,	/* final speed factor */
+	10,	/* final reverb early reflections */
+	50,	/* final reverb late reflections */
+};
+	
 #define SAMPLERATE 44100
 #define ARRAYSIZE(x) (sizeof(x) / sizeof((x)[0]))
 
@@ -417,10 +431,10 @@ int main(int argc, char *argv[])
 
 	if (argc < 2)
 		usage();
-	s = make_explosion(4.0, 4);
-	change_speed_inplace(s, 0.25);
+	s = make_explosion(e.duration, e.nlayers);
+	change_speed_inplace(s, e.final_speed_factor);
 	trim_trailing_silence(s);
-	s2 = poor_mans_reverb(s, 10, 50);
+	s2 = poor_mans_reverb(s, e.reverb_early_refls, e.reverb_late_refls);
 	trim_trailing_silence(s2);
 	save_file(argv[1], s2, 1);
 	free_sound(s);
