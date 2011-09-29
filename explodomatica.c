@@ -35,6 +35,7 @@ struct explosion_def {
 	int preexplosions;
 	double preexplosion_delay;
 	double preexplosion_low_pass_factor;
+	int preexplosion_lp_iters;
 	double final_speed_factor;
 	int reverb_early_refls;
 	int reverb_late_refls;
@@ -42,8 +43,9 @@ struct explosion_def {
 	4.0,	/* duration in seconds (roughly) */
 	4,	/* nlayers */
 	1,	/* preexplosions */
-	0.2,	/* preexplosion delay, 200ms */
-	0.5,	/* preexplosion low pass factor */
+	0.25,	/* preexplosion delay, 250ms */
+	0.8,	/* preexplosion low pass factor */
+	1,	/* preexplosion low pass iters */
 	0.25,	/* final speed factor */
 	10,	/* final reverb early reflections */
 	50,	/* final reverb late reflections */
@@ -446,16 +448,17 @@ static struct sound *make_preexplosions(struct explosion_def *e)
 		struct sound *exp;
 		int offset;
 		exp = make_explosion(e->duration / 2, e->nlayers);
-
 		offset = irand(seconds_to_frames(e->preexplosion_delay));
 		delay_effect_in_place(exp, offset);
 		accumulate_sound(pe, exp);
 		renormalize(pe);
 		free_sound(exp);
 	}
-	sliding_low_pass_inplace(pe,
-		e->preexplosion_low_pass_factor,
-		e->preexplosion_low_pass_factor);
+	for (i = 0 ; i < e->preexplosion_lp_iters; i++) {
+		sliding_low_pass_inplace(pe,
+			e->preexplosion_low_pass_factor,
+			e->preexplosion_low_pass_factor);
+	}
 	renormalize(pe);
 	return pe;
 }
