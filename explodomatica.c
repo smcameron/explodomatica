@@ -72,7 +72,7 @@ static double drand(void)
 
 static int irand(int n)
 {
-	return (n * (rand() & 0x0ffffff)) / 0x0ffffff;
+	return (n * (rand() & 0x0ffff)) / 0x0ffff;
 }
 
 static void free_sound(struct sound *s)
