@@ -668,9 +668,30 @@ static void process_options(int argc, char *argv[], struct explosion_def *e)
 		usage();
 }
 
-int main(int argc, char *argv[])
+void explodomatica(struct explosion_def *e)
 {
 	struct sound *pe, *s, *s2;
+
+	pe = make_preexplosions(e);
+	s = make_explosion(e->duration, e->nlayers);
+	if (pe) {
+		accumulate_sound(s, pe);
+		renormalize(s);
+	}
+	change_speed_inplace(s, e->final_speed_factor);
+	trim_trailing_silence(s);
+	if (e->reverb) {
+		s2 = poor_mans_reverb(s, e->reverb_early_refls, e->reverb_late_refls);
+		trim_trailing_silence(s2);
+	} else {
+		s2 = copy_sound(s);
+	}
+	save_file(e->save_filename, s2, 1);
+	free_sound(s);
+}
+
+int main(int argc, char *argv[])
+{
 	struct timeval tv;
 
 	e = defaults;
@@ -682,23 +703,7 @@ int main(int argc, char *argv[])
 		usage();
 
 	process_options(argc, argv, &e);
-
-	pe = make_preexplosions(&e);
-	s = make_explosion(e.duration, e.nlayers);
-	if (pe) {
-		accumulate_sound(s, pe);
-		renormalize(s);
-	}
-	change_speed_inplace(s, e.final_speed_factor);
-	trim_trailing_silence(s);
-	if (e.reverb) {
-		s2 = poor_mans_reverb(s, e.reverb_early_refls, e.reverb_late_refls);
-		trim_trailing_silence(s2);
-	} else {
-		s2 = copy_sound(s);
-	}
-	save_file(e.save_filename, s2, 1);
-	free_sound(s);
+	explodomatica(&e);
 
 	return 0;
 }
