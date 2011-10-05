@@ -32,9 +32,12 @@
 
 #include <sndfile.h> /* libsndfile */
 
-char save_filename[PATH_MAX + 1];
 
 struct explosion_def {
+	char save_filename[PATH_MAX + 1];
+	char input_file[PATH_MAX + 1];
+	double *input_data;
+	unsigned long long input_samples;
 	double duration;
 	int nlayers;
 	int preexplosions;
@@ -46,6 +49,10 @@ struct explosion_def {
 	int reverb_late_refls;
 	int reverb; 
 } e, defaults = {
+	{ 0 },
+	{ 0 },
+	NULL,
+	0LL,
 	4.0,	/* duration in seconds (roughly) */
 	4,	/* nlayers */
 	1,	/* preexplosions */
@@ -104,6 +111,8 @@ void usage(void)
 	fprintf(stderr, "                  the sound up, values less than 1.0 slow it down\n");
 	fprintf(stderr, "                  Default is %f\n", defaults.final_speed_factor);
 	fprintf(stderr, "  --noreverb      Suppress the 'reverb' effect\n");
+	fprintf(stderr, "  --input file    Use the given (44100Hz mono) wav file\n"
+			"                  as input instead of generating white noise for input.\n");
 	exit(1);
 }
 
@@ -234,6 +243,20 @@ static struct sound *make_noise(int nsamples)
 	struct sound *s;
 	s = alloc_sound(nsamples);
 
+	/* If there is input data, use that rather than generating noise */
+	if (e.input_data) {
+		int n;
+
+		n = nsamples;
+		if (e.input_samples < (unsigned long long) n)
+			n = e.input_samples;
+		memset(s->data, 0, sizeof(s->data[0]) * nsamples);
+		memcpy(s->data, e.input_data, n * sizeof(s->data[0]));
+		s->nsamples = nsamples;
+		return s;
+	}
+		
+	/* generate noise */
 	for (i = 0; i < nsamples; i++) {
 		s->data[i] = 2.0 * drand() - 1.0;
 		s->nsamples++;
@@ -504,6 +527,49 @@ static struct sound *make_preexplosions(struct explosion_def *e)
 	return pe;
 }
 
+static void read_input_file(char *filename,
+	double **input_data, unsigned long long *input_samples)
+{
+	SF_INFO sfi;
+	SNDFILE *sf;
+	unsigned long long nframes;
+	unsigned long long buffersize;
+	unsigned long long samples;
+
+	memset(&sfi, 0, sizeof(sfi));
+
+	sf = sf_open(filename, SFM_READ, &sfi);
+	if (!sf) {
+		fprintf(stderr, "explodomatica: Cannot open '%s': %s\n", 
+			filename, sf_strerror(sf));
+		exit(1);
+	}
+
+	printf("Input file:%s\n", filename);
+	printf("  frames:      %llu\n", sfi.frames);
+	printf("  sample rate: %d\n", sfi.samplerate);
+	printf("  channels:    %d\n", sfi.channels);
+	printf("    format:    %d\n", sfi.format);
+	printf("  sections:    %d\n", sfi.sections);
+	printf("  seekable:    %d\n", sfi.seekable);
+
+	samples = sfi.channels * sfi.frames;
+	buffersize = (sizeof(*input_data[0]) * samples);
+	*input_data = malloc(buffersize);
+	memset(*input_data, 0, buffersize); 
+
+	printf("samples = %llu\n", samples);
+	nframes = sf_read_double(sf, *input_data, samples); 
+	if (nframes != samples) {
+		fprintf(stderr, "explodomatica: Error reading '%s': %s\n", 
+			filename, sf_strerror(sf));
+		exit(1);
+	}
+	*input_samples = nframes;
+
+	sf_close(sf);	
+}
+
 static void process_options(int argc, char *argv[], struct explosion_def *e)
 {
 	int this_option_optind = optind ? optind : 1;
@@ -520,6 +586,7 @@ static void process_options(int argc, char *argv[], struct explosion_def *e)
 		{"pre-lp-factor", 1, 0, 5},
 		{"pre-lp-count", 1, 0, 6},
 		{"noreverb", 0, 0, 7},
+		{"input", 1, 0, 8},
 		{0, 0, 0, 0}
 	};
 
@@ -583,14 +650,20 @@ static void process_options(int argc, char *argv[], struct explosion_def *e)
 			printf("noreverb selected\n");
 			e->reverb = 0;
 			break;
+
+		case 8: /* input file */
+			strncpy(e->input_file, optarg, PATH_MAX);
+			printf("input file: '%s'\n", e->input_file);
+			read_input_file(e->input_file, &e->input_data, &e->input_samples);
+			break;
 			
 		default:
 			usage();
 		}
 	}
 	if (optind < argc) {
-		strcpy(save_filename, argv[optind]);
-		printf("save filename is %s\n", save_filename);
+		strcpy(e->save_filename, argv[optind]);
+		printf("save filename is %s\n", e->save_filename);
 	} else
 		usage();
 }
@@ -624,7 +697,7 @@ int main(int argc, char *argv[])
 	} else {
 		s2 = copy_sound(s);
 	}
-	save_file(save_filename, s2, 1);
+	save_file(e.save_filename, s2, 1);
 	free_sound(s);
 
 	return 0;
