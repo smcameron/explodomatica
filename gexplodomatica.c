@@ -113,12 +113,20 @@ static gboolean delete_event(GtkWidget *widget, GdkEvent *event, gpointer data)
 
 static void quitclicked(GtkWidget *widget, gpointer data)
 {
-    gtk_main_quit();
+	gtk_main_quit();
 }
 
 static void playclicked(GtkWidget *widget, gpointer data)
 {
 	printf("play clicked\n");
+	if (!generated_sound) {
+		printf("Nothing to play.\n");
+		return;
+	}
+	wwviaudio_cancel_all_sounds();
+	printf("nsamples = %d\n", generated_sound->nsamples);
+	wwviaudio_use_double_clip(1, generated_sound->data, generated_sound->nsamples);
+	wwviaudio_add_sound(1);
 }
 
 static void saveclicked(GtkWidget *widget, gpointer data)
@@ -295,7 +303,8 @@ int main(int argc, char *argv[])
 {
 	struct gui ui;
 
-	if (wwviaudio_initialize_portaudio(10, 10)) {
+	wwviaudio_set_sound_device(-1);
+	if (wwviaudio_initialize_portaudio(20, 20)) {
 		fprintf(stderr, "Can't initialized port audio\n");
 		exit(1);
 	}

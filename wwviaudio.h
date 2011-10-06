@@ -76,6 +76,8 @@ GLOBAL void wwviaudio_stop_portaudio(void);
  */
 GLOBAL int wwviaudio_read_ogg_clip(int sound_number, char *filename);
 
+GLOBAL int wwviaudio_use_double_clip(int sound_number, double *sample, int nsamples);
+
 /*
  *             Global sound control functions.
  */

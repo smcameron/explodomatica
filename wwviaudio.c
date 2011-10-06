@@ -171,6 +171,25 @@ error:
 	return -1;
 }
 
+int wwviaudio_use_double_clip(int clipnum, double *sample, int nsamples)
+{
+	int i;
+
+	if (clipnum >= max_sound_clips || clipnum < 0)
+		return -1;
+
+	if (clip[clipnum].sample != NULL)
+		/* overwriting a previously read clip... */
+		free(clip[clipnum].sample);
+
+	clip[clipnum].sample = malloc(sizeof(clip[clipnum].sample[0]) * nsamples);
+
+	for (i = 0; i < nsamples; i++) 
+		clip[clipnum].sample[i] = (int16_t) (sample[i] * 32767.0); 
+	clip[clipnum].nsamples = nsamples;
+	return 0;
+}
+
 /* This routine will be called by the PortAudio engine when audio is needed.
 ** It may called at interrupt level on some machines so don't do anything
 ** that could mess up the system like calling malloc() or free().
