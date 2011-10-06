@@ -19,7 +19,12 @@
 
  */
 #include <stdio.h>
+#include <string.h>
 #include <gtk/gtk.h>
+
+#include "explodomatica.h"
+
+static struct sound *generated_sound = NULL;
 
 typedef void (*clickfunction)(GtkWidget *widget, gpointer data);
 
@@ -50,9 +55,32 @@ static void mutateclicked(GtkWidget *widget, gpointer data)
 
 static void generateclicked(GtkWidget *widget, gpointer data)
 {
-	printf("generate clicked\n");
-}
+	struct explosion_def e;
 
+	printf("generate clicked\n");
+
+	e = explodomatica_defaults;
+
+	strcpy(e.save_filename, "");
+	strcpy(e.input_file, "");
+	e.input_data = NULL;
+	e.input_samples = 0;
+#if 0
+	e.duration = xxx;
+	e.nlayers = xxx;
+	e.preexplosions = xxx;
+	e.preexplosion_delay = xxx;
+        e.preexplosion_low_pass_factor = xxx;
+        e.preexplosion_lp_iters = xxx;
+        e.final_speed_factor = xxx;
+        e.reverb_early_refls = xxx;
+        e.reverb_late_refls = xxx;
+        e.reverb = xxx;
+#endif
+	if (generated_sound)
+		free_sound(generated_sound);
+	generated_sound = explodomatica(&e);
+}
 
 #define ARRAYSIZE(x) (sizeof(x) / sizeof((x)[0]))
 

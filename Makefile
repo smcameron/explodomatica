@@ -13,8 +13,8 @@ libexplodomatica.o:	libexplodomatica.c explodomatica.h
 explodomatica:	explodomatica.c explodomatica.h libexplodomatica.o
 	$(CC) ${CFLAGS} -lm -lsndfile -o explodomatica libexplodomatica.o explodomatica.c
 
-gexplodomatica:	gexplodomatica.c
-	$(CC) ${CFLAGS} ${GTKCFLAGS} ${GTKLDFLAGS} -o gexplodomatica gexplodomatica.c
+gexplodomatica:	gexplodomatica.c libexplodomatica.o explodomatica.h
+	$(CC) ${CFLAGS} ${GTKCFLAGS} ${GTKLDFLAGS} -lm -lsndfile -o gexplodomatica libexplodomatica.o gexplodomatica.c
 
 clean:
 	rm -f explodomatica gexplodomatica libexplodomatica.o
