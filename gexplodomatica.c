@@ -20,9 +20,11 @@
  */
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include <gtk/gtk.h>
 
 #include "explodomatica.h"
+#include "wwviaudio.h"
 
 static struct sound *generated_sound = NULL;
 
@@ -293,7 +295,14 @@ int main(int argc, char *argv[])
 {
 	struct gui ui;
 
+	if (wwviaudio_initialize_portaudio(10, 10)) {
+		fprintf(stderr, "Can't initialized port audio\n");
+		exit(1);
+	}
 	init_ui(&argc, &argv, &ui);
 	gtk_main();
+	wwviaudio_cancel_all_sounds();
+	wwviaudio_stop_portaudio();
+
 	return 0;
 }
