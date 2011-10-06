@@ -100,6 +100,7 @@ struct gui {
 	GtkWidget *drawing_area;
 	GtkWidget *reverbcheck;
 	GtkWidget *buttonhbox;
+	GtkWidget *file_selection;
 };
 
 
@@ -120,7 +121,14 @@ static void playclicked(GtkWidget *widget, gpointer data)
 
 static void saveclicked(GtkWidget *widget, gpointer data)
 {
+	struct gui *ui = data;
+
 	printf("save clicked\n");
+	if (!generated_sound) {
+		printf("nothing to save.\n");
+		return;
+	}
+	gtk_widget_show(ui->file_selection);
 }
 
 static void mutateclicked(GtkWidget *widget, gpointer data)
@@ -193,6 +201,19 @@ static void show_slider(struct slider *s)
 	gtk_widget_show(s->slider);
 }
 
+static void save_file_selected(GtkWidget *w, struct gui *ui)
+{
+	char *filename = (char *) gtk_file_selection_get_filename (GTK_FILE_SELECTION (ui->file_selection));	
+	if (!generated_sound) {
+		printf("Nothing to save\n");
+		return;
+	}
+	printf("Saving %s\n", filename);
+	explodomatica_save_file(filename, generated_sound, 1);
+	gtk_widget_hide(ui->file_selection);
+	return;
+}
+
 static void init_ui(int *argc, char **argv[], struct gui *ui)
 {
 	unsigned int i;
@@ -240,6 +261,20 @@ static void init_ui(int *argc, char **argv[], struct gui *ui)
 
 	gtk_window_set_default_size(GTK_WINDOW(ui->window), 800, 500);
 
+
+	ui->file_selection = gtk_file_selection_new("Save Audio file");
+	g_signal_connect (ui->file_selection, "destroy", G_CALLBACK (gtk_widget_hide), ui->file_selection);
+	g_signal_connect (GTK_FILE_SELECTION (ui->file_selection)->ok_button,
+		"clicked", G_CALLBACK (save_file_selected), (gpointer) ui);
+    
+	/* Connect the cancel_button to hide the widget */
+	g_signal_connect_swapped(GTK_FILE_SELECTION (ui->file_selection)->cancel_button,
+	                      "clicked", G_CALLBACK (gtk_widget_hide),
+			      ui->file_selection);
+    
+	gtk_file_selection_set_filename(GTK_FILE_SELECTION(ui->file_selection), 
+					"explosion.wav");
+    
 	gtk_widget_show(ui->vbox1);
 	gtk_widget_show(ui->buttonhbox);
 	gtk_widget_show(ui->drawingbox);
