@@ -50,6 +50,8 @@ static int irand(int n)
 
 void free_sound(struct sound *s)
 {
+	if (!s)
+		return;
 	if (s->data)
 		free(s->data);
 	s->data = NULL;
