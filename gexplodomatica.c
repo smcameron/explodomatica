@@ -26,62 +26,6 @@
 
 static struct sound *generated_sound = NULL;
 
-typedef void (*clickfunction)(GtkWidget *widget, gpointer data);
-
-static gboolean delete_event(GtkWidget *widget, GdkEvent *event, gpointer data)
-{
-    return TRUE;
-}
-
-static void destroy(GtkWidget *widget, gpointer data)
-{
-    gtk_main_quit();
-}
-
-static void playclicked(GtkWidget *widget, gpointer data)
-{
-	printf("play clicked\n");
-}
-
-static void saveclicked(GtkWidget *widget, gpointer data)
-{
-	printf("save clicked\n");
-}
-
-static void mutateclicked(GtkWidget *widget, gpointer data)
-{
-	printf("mutate clicked\n");
-}
-
-static void generateclicked(GtkWidget *widget, gpointer data)
-{
-	struct explosion_def e;
-
-	printf("generate clicked\n");
-
-	e = explodomatica_defaults;
-
-	strcpy(e.save_filename, "");
-	strcpy(e.input_file, "");
-	e.input_data = NULL;
-	e.input_samples = 0;
-#if 0
-	e.duration = xxx;
-	e.nlayers = xxx;
-	e.preexplosions = xxx;
-	e.preexplosion_delay = xxx;
-        e.preexplosion_low_pass_factor = xxx;
-        e.preexplosion_lp_iters = xxx;
-        e.final_speed_factor = xxx;
-        e.reverb_early_refls = xxx;
-        e.reverb_late_refls = xxx;
-        e.reverb = xxx;
-#endif
-	if (generated_sound)
-		free_sound(generated_sound);
-	generated_sound = explodomatica(&e);
-}
-
 #define ARRAYSIZE(x) (sizeof(x) / sizeof((x)[0]))
 
 struct slider_spec {
@@ -124,6 +68,106 @@ struct slider {
 	double r1, r2, inc;
 };
 
+typedef void (*clickfunction)(GtkWidget *widget, gpointer data);
+
+static void mutateclicked(GtkWidget *widget, gpointer data);
+static void generateclicked(GtkWidget *widget, gpointer data);
+static void playclicked(GtkWidget *widget, gpointer data);
+static void saveclicked(GtkWidget *widget, gpointer data);
+static void quitclicked(GtkWidget *widget, gpointer data);
+
+struct button_spec {
+	char *buttontext;
+	clickfunction f;
+	char *tooltiptext;
+} buttonspeclist[] = {
+	{ "Mutate", mutateclicked, "Randomly alter all parameters by some small amount."},
+	{ "Generate", generateclicked, "Generate an explosion sound effect using the "
+					"current values of all parameters"},
+	{ "Play", playclicked, "Play the most recently generated sound."},
+	{ "Save", saveclicked, "Save the most recently generated sound."},
+	{ "Quit", quitclicked, "Quit Explodomatica"},
+
+};
+
+struct gui {
+	GtkWidget *window;
+	GtkWidget *vbox1;
+	GtkWidget *slidertable;
+	struct slider sliderlist[ARRAYSIZE(sliderspeclist)];
+	GtkWidget *button[ARRAYSIZE(buttonspeclist)];
+	GtkWidget *drawingbox;
+	GtkWidget *drawing_area;
+	GtkWidget *reverbcheck;
+	GtkWidget *buttonhbox;
+};
+
+
+static gboolean delete_event(GtkWidget *widget, GdkEvent *event, gpointer data)
+{
+    return TRUE;
+}
+
+static void quitclicked(GtkWidget *widget, gpointer data)
+{
+    gtk_main_quit();
+}
+
+static void playclicked(GtkWidget *widget, gpointer data)
+{
+	printf("play clicked\n");
+}
+
+static void saveclicked(GtkWidget *widget, gpointer data)
+{
+	printf("save clicked\n");
+}
+
+static void mutateclicked(GtkWidget *widget, gpointer data)
+{
+	printf("mutate clicked\n");
+}
+
+#define LAYERS 0
+#define DURATION 1
+#define PREEXPLOSIONS 2
+#define PREEXPLOSION_DELAY 3
+#define PREEXPLOSION_LP_FACTOR 4
+#define PREEXPLOSION_LP_ITERS 5
+#define FINAL_SPEED_FACTOR 6
+#define REVERB_EARLY_REFLS 7
+#define REVERB_LATE_REFLS 8
+
+static void generateclicked(GtkWidget *widget, gpointer data)
+{
+	struct gui *ui = data;
+	struct explosion_def e;
+
+	printf("generate clicked\n");
+
+	e = explodomatica_defaults;
+
+	strcpy(e.save_filename, "");
+	strcpy(e.input_file, "");
+	e.input_data = NULL;
+	e.input_samples = 0;
+
+	e.nlayers = (int) gtk_range_get_value(GTK_RANGE(ui->sliderlist[LAYERS].slider));
+	e.duration = gtk_range_get_value(GTK_RANGE(ui->sliderlist[DURATION].slider));
+	e.preexplosions = (int) gtk_range_get_value(GTK_RANGE(ui->sliderlist[PREEXPLOSIONS].slider));
+	e.preexplosion_delay = gtk_range_get_value(GTK_RANGE(ui->sliderlist[PREEXPLOSION_DELAY].slider));
+	e.preexplosion_low_pass_factor = gtk_range_get_value(GTK_RANGE(ui->sliderlist[PREEXPLOSION_LP_FACTOR].slider));
+	e.preexplosion_lp_iters = (int) gtk_range_get_value(GTK_RANGE(ui->sliderlist[PREEXPLOSION_LP_ITERS].slider));
+	e.final_speed_factor = gtk_range_get_value(GTK_RANGE(ui->sliderlist[FINAL_SPEED_FACTOR].slider));
+	e.reverb_early_refls = (int) gtk_range_get_value(GTK_RANGE(ui->sliderlist[REVERB_EARLY_REFLS].slider));
+	e.reverb_late_refls = (int) gtk_range_get_value(GTK_RANGE(ui->sliderlist[REVERB_LATE_REFLS].slider));
+	e.reverb = gtk_toggle_button_get_active((GtkToggleButton *) ui->reverbcheck);
+
+	if (generated_sound)
+		free_sound(generated_sound);
+	generated_sound = explodomatica(&e);
+}
+
 static void add_slider(GtkWidget *container, int row,
 		char *labeltext, struct slider *s,
 		double r1, double r2, double inc, double initial_value,
@@ -149,32 +193,6 @@ static void show_slider(struct slider *s)
 	gtk_widget_show(s->slider);
 }
 
-struct button_spec {
-	char *buttontext;
-	clickfunction f;
-	char *tooltiptext;
-} buttonspeclist[] = {
-	{ "Mutate", mutateclicked, "Randomly alter all parameters by some small amount."},
-	{ "Generate", generateclicked, "Generate an explosion sound effect using the "
-					"current values of all parameters"},
-	{ "Play", playclicked, "Play the most recently generated sound."},
-	{ "Save", saveclicked, "Save the most recently generated sound."},
-	{ "Quit", destroy, "Quit Explodomatica"},
-
-};
-
-struct gui {
-	GtkWidget *window;
-	GtkWidget *vbox1;
-	GtkWidget *slidertable;
-	struct slider sliderlist[ARRAYSIZE(sliderspeclist)];
-	GtkWidget *button[ARRAYSIZE(buttonspeclist)];
-	GtkWidget *drawingbox;
-	GtkWidget *drawing_area;
-	GtkWidget *reverbcheck;
-	GtkWidget *buttonhbox;
-};
-
 static void init_ui(int *argc, char **argv[], struct gui *ui)
 {
 	unsigned int i;
@@ -185,7 +203,7 @@ static void init_ui(int *argc, char **argv[], struct gui *ui)
 	gtk_window_set_title(GTK_WINDOW (ui->window), "Explodomatica");
 
 	g_signal_connect(ui->window, "delete-event", G_CALLBACK (delete_event), NULL);
-	g_signal_connect(ui->window, "destroy", G_CALLBACK (destroy), NULL);
+	g_signal_connect(ui->window, "destroy", G_CALLBACK (quitclicked), NULL);
 
 	ui->vbox1 = gtk_vbox_new(FALSE, 0);
 	ui->slidertable = gtk_table_new(ARRAYSIZE(ui->sliderlist), 2, FALSE);
@@ -212,7 +230,7 @@ static void init_ui(int *argc, char **argv[], struct gui *ui)
 
 	for (i = 0; i < ARRAYSIZE(ui->button); i++) {
 		ui->button[i] = gtk_button_new_with_label(buttonspeclist[i].buttontext);
-		g_signal_connect(ui->button[i], "clicked", G_CALLBACK (buttonspeclist[i].f), NULL);
+		g_signal_connect(ui->button[i], "clicked", G_CALLBACK (buttonspeclist[i].f), ui);
 		gtk_box_pack_start(GTK_BOX (ui->buttonhbox), ui->button[i], TRUE, TRUE, 0);
 		gtk_widget_set_tooltip_text(ui->button[i], buttonspeclist[i].tooltiptext);
 	}
