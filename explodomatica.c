@@ -63,7 +63,7 @@ void usage(void)
 	fprintf(stderr, "                  Specifies the number of times the low pass filter used\n");
 	fprintf(stderr, "                  on the pre-explosion part of the sound.  values\n");
 
-	fprintf(stderr, "                  Default is %f\n", explodomatica_defaults.preexplosion_lp_iters);
+	fprintf(stderr, "                  Default is %d\n", explodomatica_defaults.preexplosion_lp_iters);
 	
 	fprintf(stderr, "  --speedfactor n\n");
 	fprintf(stderr, "                  Amount to speed up (or slow down) the final\n");
@@ -78,7 +78,6 @@ void usage(void)
 
 static void process_options(int argc, char *argv[], struct explosion_def *e)
 {
-	int this_option_optind = optind ? optind : 1;
 	int option_index = 0;
 	int c, n, ival;
 	double dval;
