@@ -38,11 +38,6 @@
 #define SAMPLERATE 44100
 #define ARRAYSIZE(x) (sizeof(x) / sizeof((x)[0]))
 
-struct sound {
-	double *data;
-	int nsamples;
-};
-
 static double drand(void)
 {
 	return (double) rand() / (double) RAND_MAX;
@@ -53,7 +48,7 @@ static int irand(int n)
 	return (n * (rand() & 0x0ffff)) / 0x0ffff;
 }
 
-static void free_sound(struct sound *s)
+void free_sound(struct sound *s)
 {
 	if (s->data)
 		free(s->data);
@@ -77,7 +72,7 @@ int seconds_to_frames(double seconds)
 	return seconds * SAMPLERATE;
 }
 
-static int save_file(char *filename, struct sound *s, int channels)
+int explodomatica_save_file(char *filename, struct sound *s, int channels)
 {
 	SNDFILE *sf;
 	SF_INFO sfinfo;
@@ -497,11 +492,10 @@ static void read_input_file(char *filename,
 	sf_close(sf);	
 }
 
-void explodomatica(struct explosion_def *e)
+struct sound *explodomatica(struct explosion_def *e)
 {
 	struct sound *pe, *s, *s2;
 
-	printf("1 e->save_filename = %s\n", e->save_filename);
 	if (e->input_file && strcmp(e->input_file, "") != 0)
 		read_input_file(e->input_file, &e->input_data, &e->input_samples);
 
@@ -519,8 +513,12 @@ void explodomatica(struct explosion_def *e)
 	} else {
 		s2 = copy_sound(s);
 	}
-	printf("2 e->save_filename = %s\n", e->save_filename);
-	save_file(e->save_filename, s2, 1);
+
+	if (strcmp(e->save_filename, "") != 0)
+		explodomatica_save_file(e->save_filename, s2, 1);
+
 	free_sound(s);
+	free_sound(pe);
+	return s2;
 }
 

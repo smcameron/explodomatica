@@ -176,6 +176,7 @@ int main(int argc, char *argv[])
 {
 	struct timeval tv;
 	struct explosion_def e;
+	struct sound *s;
 
 	e = explodomatica_defaults;
 
@@ -186,7 +187,8 @@ int main(int argc, char *argv[])
 		usage();
 
 	process_options(argc, argv, &e);
-	explodomatica(&e);
+	s = explodomatica(&e);
+	free_sound(s);
 
 	return 0;
 }

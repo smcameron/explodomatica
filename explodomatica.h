@@ -27,6 +27,11 @@
 #define GLOBAL extern
 #endif
 
+struct sound {
+        double *data;
+        int nsamples;
+};
+
 struct explosion_def {
 	char save_filename[PATH_MAX + 1];
 	char input_file[PATH_MAX + 1];
@@ -61,6 +66,8 @@ static struct explosion_def explodomatica_defaults = {
 	1,	/* reverb wanted? */
 };
 	
-GLOBAL void explodomatica(struct explosion_def *e);
+GLOBAL struct sound *explodomatica(struct explosion_def *e);
+GLOBAL void free_sound(struct sound *s);
+GLOBAL int explodomatica_save_file(char *filename, struct sound *s, int channels);
 
 #endif
