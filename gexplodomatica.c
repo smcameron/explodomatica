@@ -255,7 +255,7 @@ static void init_ui(int *argc, char **argv[], struct gui *ui)
 
 	ui->reverbcheck = gtk_check_button_new_with_label("Poor man's reverb");
 	gtk_widget_set_tooltip_text(ui->reverbcheck, "Enable (or disable) \"poor man's reverb\"");
-	gtk_toggle_button_set_active((GtkToggleButton *) ui->reverbcheck, TRUE);
+	/* gtk_toggle_button_set_active((GtkToggleButton *) ui->reverbcheck, TRUE); */
 
 	gtk_box_pack_start(GTK_BOX(ui->drawingbox), ui->drawing_area, FALSE, FALSE, 0);
 	gtk_container_add(GTK_CONTAINER(ui->vbox1), ui->drawingbox);
