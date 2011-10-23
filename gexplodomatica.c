@@ -105,11 +105,12 @@ struct gui {
 	GtkWidget *file_selection;
 };
 
-
+#if 0
 static gboolean delete_event(GtkWidget *widget, GdkEvent *event, gpointer data)
 {
     return TRUE;
 }
+#endif
 
 static void quitclicked(GtkWidget *widget, gpointer data)
 {
@@ -233,7 +234,7 @@ static void init_ui(int *argc, char **argv[], struct gui *ui)
 	ui->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_title(GTK_WINDOW (ui->window), "Explodomatica");
 
-	g_signal_connect(ui->window, "delete-event", G_CALLBACK (delete_event), NULL);
+	g_signal_connect(ui->window, "delete-event", G_CALLBACK (quitclicked), NULL);
 	g_signal_connect(ui->window, "destroy", G_CALLBACK (quitclicked), NULL);
 
 	ui->vbox1 = gtk_vbox_new(FALSE, 0);
