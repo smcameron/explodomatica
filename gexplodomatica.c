@@ -103,6 +103,9 @@ struct gui {
 	GtkWidget *reverbcheck;
 	GtkWidget *buttonhbox;
 	GtkWidget *file_selection;
+	GtkWidget *progress_bar;
+	volatile float progress;
+	int ptimer;
 };
 
 #if 0
@@ -225,12 +228,20 @@ static void save_file_selected(GtkWidget *w, struct gui *ui)
 	return;
 }
 
+static gint update_progress_bar(gpointer data)
+{
+	struct gui *ui = data;
+	gtk_progress_bar_update(GTK_PROGRESS_BAR(ui->progress_bar),
+			ui->progress);
+}
+
 static void init_ui(int *argc, char **argv[], struct gui *ui)
 {
 	unsigned int i;
 
 	gtk_init(argc, argv);
 
+	ui->progress = 0.0;
 	ui->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_title(GTK_WINDOW (ui->window), "Explodomatica");
 
@@ -242,6 +253,7 @@ static void init_ui(int *argc, char **argv[], struct gui *ui)
 	ui->drawingbox = gtk_hbox_new(FALSE, 0);
 	ui->buttonhbox = gtk_hbox_new(FALSE, 0);
 	ui->drawing_area = gtk_drawing_area_new();
+	ui->progress_bar = gtk_progress_bar_new();
 
 	gtk_container_add(GTK_CONTAINER (ui->window), ui->vbox1);
 	gtk_container_add(GTK_CONTAINER (ui->vbox1), ui->slidertable);
@@ -268,6 +280,7 @@ static void init_ui(int *argc, char **argv[], struct gui *ui)
 	}
 
 	gtk_box_pack_start(GTK_BOX (ui->vbox1), ui->reverbcheck, TRUE, TRUE, 0);
+	gtk_container_add(GTK_CONTAINER(ui->vbox1), ui->progress_bar);
 	gtk_container_add(GTK_CONTAINER (ui->vbox1), ui->buttonhbox);
 
 	gtk_window_set_default_size(GTK_WINDOW(ui->window), 800, 500);
@@ -288,6 +301,7 @@ static void init_ui(int *argc, char **argv[], struct gui *ui)
 					"explosion.wav");
     
 	gtk_widget_show(ui->vbox1);
+	gtk_widget_show(ui->progress_bar);
 	gtk_widget_show(ui->buttonhbox);
 	gtk_widget_show(ui->drawingbox);
 	gtk_widget_show(ui->drawing_area);
@@ -299,6 +313,8 @@ static void init_ui(int *argc, char **argv[], struct gui *ui)
 		gtk_widget_show(ui->button[i]);
 	gtk_widget_show(ui->drawing_area);
 	gtk_widget_show(ui->window);
+	ui->ptimer = gtk_timeout_add(100, update_progress_bar, ui);
+	explodomatica_progress_variable(&ui->progress);
 }
 
 int main(int argc, char *argv[])

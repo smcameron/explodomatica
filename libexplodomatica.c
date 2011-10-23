@@ -38,6 +38,8 @@
 #define SAMPLERATE 44100
 #define ARRAYSIZE(x) (sizeof(x) / sizeof((x)[0]))
 
+static float *explodomatica_progress = NULL;
+
 static double drand(void)
 {
 	return (double) rand() / (double) RAND_MAX;
@@ -524,3 +526,7 @@ struct sound *explodomatica(struct explosion_def *e)
 	return s2;
 }
 
+void explodomatica_progress_variable(float *progress)
+{
+	explodomatica_progress = progress;
+}

@@ -69,5 +69,6 @@ static struct explosion_def explodomatica_defaults = {
 GLOBAL struct sound *explodomatica(struct explosion_def *e);
 GLOBAL void free_sound(struct sound *s);
 GLOBAL int explodomatica_save_file(char *filename, struct sound *s, int channels);
+GLOBAL void explodomatica_progress_variable(float *progress);
 
 #endif
