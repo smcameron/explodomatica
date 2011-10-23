@@ -274,6 +274,7 @@ static void init_ui(int *argc, char **argv[], struct gui *ui)
 
 
 	ui->file_selection = gtk_file_selection_new("Save Audio file");
+	g_signal_connect (ui->file_selection, "delete-event", G_CALLBACK (gtk_widget_hide), ui->file_selection);
 	g_signal_connect (ui->file_selection, "destroy", G_CALLBACK (gtk_widget_hide), ui->file_selection);
 	g_signal_connect (GTK_FILE_SELECTION (ui->file_selection)->ok_button,
 		"clicked", G_CALLBACK (save_file_selected), (gpointer) ui);
