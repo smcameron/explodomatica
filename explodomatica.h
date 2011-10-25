@@ -80,6 +80,6 @@ GLOBAL void explodomatica_thread(pthread_t *t, struct explodomatica_thread_arg *
 
 GLOBAL void free_sound(struct sound *s);
 GLOBAL int explodomatica_save_file(char *filename, struct sound *s, int channels);
-GLOBAL void explodomatica_progress_variable(float *progress);
+GLOBAL void explodomatica_progress_variable(volatile float *progress);
 
 #endif

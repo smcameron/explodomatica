@@ -121,12 +121,14 @@ static gboolean delete_event(GtkWidget *widget, GdkEvent *event, gpointer data)
 }
 #endif
 
-static void quitclicked(GtkWidget *widget, gpointer data)
+static void quitclicked(__attribute__((unused)) GtkWidget *widget,
+		__attribute__((unused)) gpointer data)
 {
 	gtk_main_quit();
 }
 
-static void playclicked(GtkWidget *widget, gpointer data)
+static void playclicked(__attribute__((unused)) GtkWidget *widget,
+		__attribute__((unused)) gpointer data)
 {
 	printf("play clicked\n");
 	if (!generated_sound) {
@@ -139,7 +141,7 @@ static void playclicked(GtkWidget *widget, gpointer data)
 	wwviaudio_add_sound(1);
 }
 
-static void saveclicked(GtkWidget *widget, gpointer data)
+static void saveclicked(__attribute__((unused)) GtkWidget *widget, gpointer data)
 {
 	struct gui *ui = data;
 
@@ -169,7 +171,7 @@ static void data_ready(struct sound *s, void *x)
 	printf("data ready\n");
 }
 
-static void generateclicked(GtkWidget *widget, gpointer data)
+static void generateclicked(__attribute__((unused)) GtkWidget *widget, gpointer data)
 {
 	struct gui *ui = data;
 
@@ -234,7 +236,7 @@ static void show_slider(struct slider *s)
 	gtk_widget_show(s->slider);
 }
 
-static void save_file_selected(GtkWidget *w, struct gui *ui)
+static void save_file_selected(__attribute__((unused)) GtkWidget *w, struct gui *ui)
 {
 	char *filename = (char *) gtk_file_selection_get_filename (GTK_FILE_SELECTION (ui->file_selection));	
 	if (!generated_sound) {

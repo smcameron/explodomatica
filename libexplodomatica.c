@@ -39,7 +39,7 @@
 #define SAMPLERATE 44100
 #define ARRAYSIZE(x) (sizeof(x) / sizeof((x)[0]))
 
-static float *explodomatica_progress = NULL;
+static volatile float *explodomatica_progress = NULL;
 
 static double drand(void)
 {
@@ -100,6 +100,7 @@ int explodomatica_save_file(char *filename, struct sound *s, int channels)
 	return 0;
 }
 
+#if 0
 static struct sound *make_sinewave(int nsamples, double frequency)
 {
 	int i;
@@ -116,6 +117,7 @@ static struct sound *make_sinewave(int nsamples, double frequency)
 	} 
 	return s;
 }
+#endif
 
 static struct sound *add_sound(struct sound *s1, struct sound *s2)
 {
@@ -551,7 +553,7 @@ struct sound *explodomatica(struct explosion_def *e)
 	return s2;
 }
 
-void explodomatica_progress_variable(float *progress)
+void explodomatica_progress_variable(volatile float *progress)
 {
 	explodomatica_progress = progress;
 }
