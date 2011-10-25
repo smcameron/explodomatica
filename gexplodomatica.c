@@ -83,10 +83,14 @@ struct button_spec {
 	clickfunction f;
 	char *tooltiptext;
 } buttonspeclist[] = {
+#define MUTATEBUTTON 0
 	{ "Mutate", mutateclicked, "Randomly alter all parameters by some small amount."},
+#define GENERATEBUTTON 1
 	{ "Generate", generateclicked, "Generate an explosion sound effect using the "
 					"current values of all parameters"},
+#define PLAYBUTTON 2
 	{ "Play", playclicked, "Play the most recently generated sound."},
+#define SAVEBUTTON 3
 	{ "Save", saveclicked, "Save the most recently generated sound."},
 	{ "Quit", quitclicked, "Quit Explodomatica"},
 
@@ -167,6 +171,11 @@ static void generateclicked(GtkWidget *widget, gpointer data)
 
 	printf("generate clicked\n");
 
+	/* disable save and play buttons while sound is generated */
+	gtk_widget_set_sensitive(ui->button[GENERATEBUTTON], 0);
+	gtk_widget_set_sensitive(ui->button[SAVEBUTTON], 0);
+	gtk_widget_set_sensitive(ui->button[PLAYBUTTON], 0);
+
 	e = explodomatica_defaults;
 
 	strcpy(e.save_filename, "");
@@ -188,6 +197,12 @@ static void generateclicked(GtkWidget *widget, gpointer data)
 	if (generated_sound)
 		free_sound(generated_sound);
 	generated_sound = explodomatica(&e);
+
+	/* enable save and play buttons after sound is generated */
+	gtk_widget_set_sensitive(ui->button[MUTATEBUTTON], 1);
+	gtk_widget_set_sensitive(ui->button[GENERATEBUTTON], 1);
+	gtk_widget_set_sensitive(ui->button[SAVEBUTTON], 1);
+	gtk_widget_set_sensitive(ui->button[PLAYBUTTON], 1);
 }
 
 static void add_slider(GtkWidget *container, int row,
@@ -233,6 +248,7 @@ static gint update_progress_bar(gpointer data)
 	struct gui *ui = data;
 	gtk_progress_bar_update(GTK_PROGRESS_BAR(ui->progress_bar),
 			ui->progress);
+	printf("progress = %g\n", ui->progress);
 }
 
 static void init_ui(int *argc, char **argv[], struct gui *ui)
@@ -299,7 +315,12 @@ static void init_ui(int *argc, char **argv[], struct gui *ui)
     
 	gtk_file_selection_set_filename(GTK_FILE_SELECTION(ui->file_selection), 
 					"explosion.wav");
-    
+
+	/* No sound yet generated, so disable buttons until then */    
+	gtk_widget_set_sensitive(ui->button[MUTATEBUTTON], 0);
+	gtk_widget_set_sensitive(ui->button[SAVEBUTTON], 0);
+	gtk_widget_set_sensitive(ui->button[PLAYBUTTON], 0);
+
 	gtk_widget_show(ui->vbox1);
 	gtk_widget_show(ui->progress_bar);
 	gtk_widget_show(ui->buttonhbox);
