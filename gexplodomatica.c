@@ -73,7 +73,6 @@ struct slider {
 
 typedef void (*clickfunction)(GtkWidget *widget, gpointer data);
 
-static void mutateclicked(GtkWidget *widget, gpointer data);
 static void generateclicked(GtkWidget *widget, gpointer data);
 static void playclicked(GtkWidget *widget, gpointer data);
 static void saveclicked(GtkWidget *widget, gpointer data);
@@ -84,14 +83,12 @@ struct button_spec {
 	clickfunction f;
 	char *tooltiptext;
 } buttonspeclist[] = {
-#define MUTATEBUTTON 0
-	{ "Mutate", mutateclicked, "Randomly alter all parameters by some small amount."},
-#define GENERATEBUTTON 1
+#define GENERATEBUTTON 0
 	{ "Generate", generateclicked, "Generate an explosion sound effect using the "
 					"current values of all parameters"},
-#define PLAYBUTTON 2
+#define PLAYBUTTON 1
 	{ "Play", playclicked, "Play the most recently generated sound."},
-#define SAVEBUTTON 3
+#define SAVEBUTTON 2
 	{ "Save", saveclicked, "Save the most recently generated sound."},
 	{ "Quit", quitclicked, "Quit Explodomatica"},
 
@@ -151,11 +148,6 @@ static void saveclicked(GtkWidget *widget, gpointer data)
 		return;
 	}
 	gtk_widget_show(ui->file_selection);
-}
-
-static void mutateclicked(GtkWidget *widget, gpointer data)
-{
-	printf("mutate clicked\n");
 }
 
 #define LAYERS 0
@@ -262,7 +254,6 @@ static gint update_progress_bar(gpointer data)
 			ui->progress);
 	if (ui->thread_done) {
 		/* enable save and play buttons after sound is generated */
-		gtk_widget_set_sensitive(ui->button[MUTATEBUTTON], 1);
 		gtk_widget_set_sensitive(ui->button[GENERATEBUTTON], 1);
 		gtk_widget_set_sensitive(ui->button[SAVEBUTTON], 1);
 		gtk_widget_set_sensitive(ui->button[PLAYBUTTON], 1);
@@ -339,7 +330,6 @@ static void init_ui(int *argc, char **argv[], struct gui *ui)
 					"explosion.wav");
 
 	/* No sound yet generated, so disable buttons until then */    
-	gtk_widget_set_sensitive(ui->button[MUTATEBUTTON], 0);
 	gtk_widget_set_sensitive(ui->button[SAVEBUTTON], 0);
 	gtk_widget_set_sensitive(ui->button[PLAYBUTTON], 0);
 
