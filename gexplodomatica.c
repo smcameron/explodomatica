@@ -108,6 +108,7 @@ struct gui {
 	GtkWidget *progress_bar;
 	volatile float progress;
 	struct explosion_def e;
+	struct explodomatica_thread_arg arg;
 	int ptimer;
 	pthread_t t;
 	int thread_done;
@@ -181,7 +182,7 @@ static void generateclicked(GtkWidget *widget, gpointer data)
 	gtk_widget_set_sensitive(ui->button[PLAYBUTTON], 0);
 
 	ui->e = explodomatica_defaults;
-
+	
 	strcpy(ui->e.save_filename, "");
 	strcpy(ui->e.input_file, "");
 	ui->e.input_data = NULL;
@@ -200,7 +201,11 @@ static void generateclicked(GtkWidget *widget, gpointer data)
 
 	if (generated_sound)
 		free_sound(generated_sound);
-	explodomatica_thread(&ui->t, &ui->e, data_ready, ui);
+
+	ui->arg.e = &ui->e;
+	ui->arg.f = data_ready; 
+	ui->arg.arg = ui;
+	explodomatica_thread(&ui->t, &ui->arg);
 	printf("Generating data\n");
 }
 

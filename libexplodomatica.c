@@ -556,12 +556,6 @@ void explodomatica_progress_variable(float *progress)
 	explodomatica_progress = progress;
 }
 
-struct explodomatica_thread_arg {
-	struct explosion_def *e;
-	explodomatica_callback f;
-	void *arg;
-};
-
 void *threadfunc(void *arg)
 {
 	struct explodomatica_thread_arg *a = arg;
@@ -572,16 +566,8 @@ void *threadfunc(void *arg)
 	return NULL;
 }
 
-void explodomatica_thread(pthread_t *t, struct explosion_def *e,
-                        explodomatica_callback f, void *a)
+void explodomatica_thread(pthread_t *t, struct explodomatica_thread_arg *arg)
 {
-	struct explodomatica_thread_arg *arg;
-
-	arg = malloc(sizeof(*arg));
-	arg->e = e;
-	arg->f = f;
-	arg->arg = a; 
 	pthread_create(t, NULL, threadfunc, arg);
 }
-
 

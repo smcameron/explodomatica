@@ -67,9 +67,17 @@ static struct explosion_def explodomatica_defaults = {
 };
 
 GLOBAL struct sound *explodomatica(struct explosion_def *e);
+
 typedef void (*explodomatica_callback)(struct sound *s, void *arg);
-GLOBAL void explodomatica_thread(pthread_t *t, struct explosion_def *e,
-			explodomatica_callback f, void *arg);
+
+struct explodomatica_thread_arg {
+        struct explosion_def *e;
+        explodomatica_callback f;
+        void *arg;
+};
+
+GLOBAL void explodomatica_thread(pthread_t *t, struct explodomatica_thread_arg *arg);
+
 GLOBAL void free_sound(struct sound *s);
 GLOBAL int explodomatica_save_file(char *filename, struct sound *s, int channels);
 GLOBAL void explodomatica_progress_variable(float *progress);
