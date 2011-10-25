@@ -65,8 +65,11 @@ static struct explosion_def explodomatica_defaults = {
 	50,	/* final reverb late reflections */
 	1,	/* reverb wanted? */
 };
-	
+
 GLOBAL struct sound *explodomatica(struct explosion_def *e);
+typedef void (*explodomatica_callback)(struct sound *s, void *arg);
+GLOBAL void explodomatica_thread(pthread_t *t, struct explosion_def *e,
+			explodomatica_callback f, void *arg);
 GLOBAL void free_sound(struct sound *s);
 GLOBAL int explodomatica_save_file(char *filename, struct sound *s, int channels);
 GLOBAL void explodomatica_progress_variable(float *progress);

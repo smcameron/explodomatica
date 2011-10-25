@@ -29,6 +29,7 @@
 #include <sys/time.h>
 #include <getopt.h>
 #include <limits.h>
+#include <pthread.h>
 
 #include <sndfile.h> /* libsndfile */
 
@@ -383,7 +384,6 @@ static struct sound *poor_mans_reverb(struct sound *s,
 		update_progress(progress_inc);
 	}
 	printf("done\n");
-	*explodomatica_progress = 1.0;	
 	return withverb;
 }
 
@@ -517,11 +517,19 @@ struct sound *explodomatica(struct explosion_def *e)
 		read_input_file(e->input_file, &e->input_data, &e->input_samples);
 
 	pe = make_preexplosions(e);
+
+	if (!e->reverb && explodomatica_progress)
+		*explodomatica_progress = 0.33;	
+	
 	s = make_explosion(e, e->duration, e->nlayers);
+	if (!e->reverb && explodomatica_progress)
+		*explodomatica_progress = 0.5;	
 	if (pe) {
 		accumulate_sound(s, pe);
 		renormalize(s);
 	}
+	if (!e->reverb && explodomatica_progress)
+		*explodomatica_progress = 0.8;	
 	change_speed_inplace(s, e->final_speed_factor);
 	trim_trailing_silence(s);
 	if (e->reverb) {
@@ -529,11 +537,15 @@ struct sound *explodomatica(struct explosion_def *e)
 		trim_trailing_silence(s2);
 	} else {
 		s2 = copy_sound(s);
+		if (!e->reverb && explodomatica_progress)
+			*explodomatica_progress = 0.9;	
 	}
 
 	if (strcmp(e->save_filename, "") != 0)
 		explodomatica_save_file(e->save_filename, s2, 1);
 
+	if (explodomatica_progress)
+		*explodomatica_progress = 1.0;	
 	free_sound(s);
 	free_sound(pe);
 	return s2;
@@ -543,3 +555,33 @@ void explodomatica_progress_variable(float *progress)
 {
 	explodomatica_progress = progress;
 }
+
+struct explodomatica_thread_arg {
+	struct explosion_def *e;
+	explodomatica_callback f;
+	void *arg;
+};
+
+void *threadfunc(void *arg)
+{
+	struct explodomatica_thread_arg *a = arg;
+	struct sound *s;
+
+	s = explodomatica(a->e);
+	a->f(s, a->arg);
+	return NULL;
+}
+
+void explodomatica_thread(pthread_t *t, struct explosion_def *e,
+                        explodomatica_callback f, void *a)
+{
+	struct explodomatica_thread_arg *arg;
+
+	arg = malloc(sizeof(*arg));
+	arg->e = e;
+	arg->f = f;
+	arg->arg = a; 
+	pthread_create(t, NULL, threadfunc, arg);
+}
+
+

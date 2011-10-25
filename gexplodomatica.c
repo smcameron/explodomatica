@@ -22,6 +22,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <gtk/gtk.h>
+#include <pthread.h>
 
 #include "explodomatica.h"
 #include "wwviaudio.h"
@@ -109,7 +110,10 @@ struct gui {
 	GtkWidget *file_selection;
 	GtkWidget *progress_bar;
 	volatile float progress;
+	struct explosion_def e;
 	int ptimer;
+	pthread_t t;
+	int thread_done;
 };
 
 #if 0
@@ -164,45 +168,48 @@ static void mutateclicked(GtkWidget *widget, gpointer data)
 #define REVERB_EARLY_REFLS 7
 #define REVERB_LATE_REFLS 8
 
+static void data_ready(struct sound *s, void *x)
+{
+	struct gui *ui = x;
+	generated_sound = s;
+	ui->thread_done = 1;
+	printf("data ready\n");
+}
+
 static void generateclicked(GtkWidget *widget, gpointer data)
 {
 	struct gui *ui = data;
-	struct explosion_def e;
 
 	printf("generate clicked\n");
+	ui->progress = 0.0;
 
 	/* disable save and play buttons while sound is generated */
 	gtk_widget_set_sensitive(ui->button[GENERATEBUTTON], 0);
 	gtk_widget_set_sensitive(ui->button[SAVEBUTTON], 0);
 	gtk_widget_set_sensitive(ui->button[PLAYBUTTON], 0);
 
-	e = explodomatica_defaults;
+	ui->e = explodomatica_defaults;
 
-	strcpy(e.save_filename, "");
-	strcpy(e.input_file, "");
-	e.input_data = NULL;
-	e.input_samples = 0;
+	strcpy(ui->e.save_filename, "");
+	strcpy(ui->e.input_file, "");
+	ui->e.input_data = NULL;
+	ui->e.input_samples = 0;
 
-	e.nlayers = (int) gtk_range_get_value(GTK_RANGE(ui->sliderlist[LAYERS].slider));
-	e.duration = gtk_range_get_value(GTK_RANGE(ui->sliderlist[DURATION].slider));
-	e.preexplosions = (int) gtk_range_get_value(GTK_RANGE(ui->sliderlist[PREEXPLOSIONS].slider));
-	e.preexplosion_delay = gtk_range_get_value(GTK_RANGE(ui->sliderlist[PREEXPLOSION_DELAY].slider));
-	e.preexplosion_low_pass_factor = gtk_range_get_value(GTK_RANGE(ui->sliderlist[PREEXPLOSION_LP_FACTOR].slider));
-	e.preexplosion_lp_iters = (int) gtk_range_get_value(GTK_RANGE(ui->sliderlist[PREEXPLOSION_LP_ITERS].slider));
-	e.final_speed_factor = gtk_range_get_value(GTK_RANGE(ui->sliderlist[FINAL_SPEED_FACTOR].slider));
-	e.reverb_early_refls = (int) gtk_range_get_value(GTK_RANGE(ui->sliderlist[REVERB_EARLY_REFLS].slider));
-	e.reverb_late_refls = (int) gtk_range_get_value(GTK_RANGE(ui->sliderlist[REVERB_LATE_REFLS].slider));
-	e.reverb = gtk_toggle_button_get_active((GtkToggleButton *) ui->reverbcheck);
+	ui->e.nlayers = (int) gtk_range_get_value(GTK_RANGE(ui->sliderlist[LAYERS].slider));
+	ui->e.duration = gtk_range_get_value(GTK_RANGE(ui->sliderlist[DURATION].slider));
+	ui->e.preexplosions = (int) gtk_range_get_value(GTK_RANGE(ui->sliderlist[PREEXPLOSIONS].slider));
+	ui->e.preexplosion_delay = gtk_range_get_value(GTK_RANGE(ui->sliderlist[PREEXPLOSION_DELAY].slider));
+	ui->e.preexplosion_low_pass_factor = gtk_range_get_value(GTK_RANGE(ui->sliderlist[PREEXPLOSION_LP_FACTOR].slider));
+	ui->e.preexplosion_lp_iters = (int) gtk_range_get_value(GTK_RANGE(ui->sliderlist[PREEXPLOSION_LP_ITERS].slider));
+	ui->e.final_speed_factor = gtk_range_get_value(GTK_RANGE(ui->sliderlist[FINAL_SPEED_FACTOR].slider));
+	ui->e.reverb_early_refls = (int) gtk_range_get_value(GTK_RANGE(ui->sliderlist[REVERB_EARLY_REFLS].slider));
+	ui->e.reverb_late_refls = (int) gtk_range_get_value(GTK_RANGE(ui->sliderlist[REVERB_LATE_REFLS].slider));
+	ui->e.reverb = gtk_toggle_button_get_active((GtkToggleButton *) ui->reverbcheck);
 
 	if (generated_sound)
 		free_sound(generated_sound);
-	generated_sound = explodomatica(&e);
-
-	/* enable save and play buttons after sound is generated */
-	gtk_widget_set_sensitive(ui->button[MUTATEBUTTON], 1);
-	gtk_widget_set_sensitive(ui->button[GENERATEBUTTON], 1);
-	gtk_widget_set_sensitive(ui->button[SAVEBUTTON], 1);
-	gtk_widget_set_sensitive(ui->button[PLAYBUTTON], 1);
+	explodomatica_thread(&ui->t, &ui->e, data_ready, ui);
+	printf("Generating data\n");
 }
 
 static void add_slider(GtkWidget *container, int row,
@@ -246,9 +253,23 @@ static void save_file_selected(GtkWidget *w, struct gui *ui)
 static gint update_progress_bar(gpointer data)
 {
 	struct gui *ui = data;
+	
+	if (ui->progress < 0.0)
+		ui->progress = 0.0;
+	if (ui->progress > 1.0)
+		ui->progress = 1.0;	
 	gtk_progress_bar_update(GTK_PROGRESS_BAR(ui->progress_bar),
 			ui->progress);
-	printf("progress = %g\n", ui->progress);
+	if (ui->thread_done) {
+		/* enable save and play buttons after sound is generated */
+		gtk_widget_set_sensitive(ui->button[MUTATEBUTTON], 1);
+		gtk_widget_set_sensitive(ui->button[GENERATEBUTTON], 1);
+		gtk_widget_set_sensitive(ui->button[SAVEBUTTON], 1);
+		gtk_widget_set_sensitive(ui->button[PLAYBUTTON], 1);
+		pthread_join(ui->t, NULL);
+		ui->thread_done = 0;
+	}
+	return TRUE;
 }
 
 static void init_ui(int *argc, char **argv[], struct gui *ui)
@@ -258,6 +279,7 @@ static void init_ui(int *argc, char **argv[], struct gui *ui)
 	gtk_init(argc, argv);
 
 	ui->progress = 0.0;
+	ui->thread_done = 0;
 	ui->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_title(GTK_WINDOW (ui->window), "Explodomatica");
 
@@ -334,7 +356,7 @@ static void init_ui(int *argc, char **argv[], struct gui *ui)
 		gtk_widget_show(ui->button[i]);
 	gtk_widget_show(ui->drawing_area);
 	gtk_widget_show(ui->window);
-	ui->ptimer = gtk_timeout_add(100, update_progress_bar, ui);
+	ui->ptimer = gtk_timeout_add(200, update_progress_bar, ui);
 	explodomatica_progress_variable(&ui->progress);
 }
 
