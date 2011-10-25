@@ -328,6 +328,15 @@ static void dot(void)
 	printf("."); fflush(stdout);
 }
 
+static void update_progress(float progress_inc)
+{
+	if (!explodomatica_progress)
+		return;
+	*explodomatica_progress += progress_inc;
+	if (*explodomatica_progress > 1.05)
+		*explodomatica_progress = 0.0;
+}
+
 static struct sound *poor_mans_reverb(struct sound *s,
 	int early_refls, int late_refls)
 {
@@ -335,6 +344,7 @@ static struct sound *poor_mans_reverb(struct sound *s,
 	struct sound *echo, *echo2;
 	struct sound *withverb;
 	double gain;
+	float progress_inc = 1.0 / (float) (early_refls + late_refls);
 
 	printf("Calculating poor man's reverb");
 	fflush(stdout);
@@ -356,6 +366,7 @@ static struct sound *poor_mans_reverb(struct sound *s,
 		delay_effect_in_place(echo2, delay);
 		accumulate_sound(withverb, echo2);
 		free_sound(echo2);
+		update_progress(progress_inc);
 	}
 
 	for (i = 0; i < late_refls; i++) {
@@ -369,8 +380,10 @@ static struct sound *poor_mans_reverb(struct sound *s,
 		delay_effect_in_place(echo2, delay);
 		accumulate_sound(withverb, echo2);
 		free_sound(echo2);
+		update_progress(progress_inc);
 	}
 	printf("done\n");
+	*explodomatica_progress = 1.0;	
 	return withverb;
 }
 
