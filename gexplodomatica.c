@@ -74,6 +74,7 @@ struct slider {
 typedef void (*clickfunction)(GtkWidget *widget, gpointer data);
 
 static void generateclicked(GtkWidget *widget, gpointer data);
+static void inputclicked(GtkWidget *widget, gpointer data);
 static void playclicked(GtkWidget *widget, gpointer data);
 static void cancelclicked(GtkWidget *widget, gpointer data);
 static void saveclicked(GtkWidget *widget, gpointer data);
@@ -87,11 +88,13 @@ struct button_spec {
 #define GENERATEBUTTON 0
 	{ "Generate", generateclicked, "Generate an explosion sound effect using the "
 					"current values of all parameters"},
-#define PLAYBUTTON 1
+#define INPUTBUTTON 1
+	{ "Input", inputclicked, "Use wav file data as input instead of generating white noise as input."},
+#define PLAYBUTTON 2
 	{ "Play", playclicked, "Play the most recently generated sound."},
-#define SAVEBUTTON 2
+#define SAVEBUTTON 3
 	{ "Save", saveclicked, "Save the most recently generated sound."},
-#define CANCELBUTTON 3
+#define CANCELBUTTON 4
 	{ "Cancel", cancelclicked, "Stop calculating audio data."},
 	{ "Quit", quitclicked, "Quit Explodomatica"},
 
@@ -106,8 +109,10 @@ struct gui {
 	GtkWidget *drawingbox;
 	GtkWidget *drawing_area;
 	GtkWidget *reverbcheck;
+	GtkWidget *whitenoisecheck;
 	GtkWidget *buttonhbox;
 	GtkWidget *file_selection;
+	GtkWidget *input_file_selection;
 	GtkWidget *progress_bar;
 	volatile float progress;
 	struct explosion_def e;
@@ -115,6 +120,7 @@ struct gui {
 	int ptimer;
 	pthread_t t;
 	int thread_done;
+	char input_file[PATH_MAX];
 };
 
 #if 0
@@ -166,6 +172,12 @@ static void saveclicked(__attribute__((unused)) GtkWidget *widget, gpointer data
 	gtk_widget_show(ui->file_selection);
 }
 
+static void inputclicked(__attribute__((unused)) GtkWidget *widget, gpointer data)
+{
+	struct gui *ui = data;
+	gtk_widget_show(ui->input_file_selection);
+}
+
 #define LAYERS 0
 #define DURATION 1
 #define PREEXPLOSIONS 2
@@ -198,8 +210,14 @@ static void generateclicked(__attribute__((unused)) GtkWidget *widget, gpointer 
 	ui->e = explodomatica_defaults;
 	
 	strcpy(ui->e.save_filename, "");
-	strcpy(ui->e.input_file, "");
-	ui->e.input_data = NULL;
+	if (gtk_toggle_button_get_active((GtkToggleButton *) ui->whitenoisecheck))
+		strcpy(ui->e.input_file, "");
+	else
+		strcpy(ui->e.input_file, ui->input_file);
+	if (ui->e.input_data != NULL) {
+		free(ui->e.input_data);
+		ui->e.input_data = NULL;
+	}
 	ui->e.input_samples = 0;
 
 	ui->e.nlayers = (int) gtk_range_get_value(GTK_RANGE(ui->sliderlist[LAYERS].slider));
@@ -260,6 +278,15 @@ static void save_file_selected(__attribute__((unused)) GtkWidget *w, struct gui 
 	return;
 }
 
+static void input_file_selected(__attribute__((unused)) GtkWidget *w, struct gui *ui)
+{
+	char *filename = (char *) gtk_file_selection_get_filename(GTK_FILE_SELECTION (ui->input_file_selection));	
+
+	strncpy(ui->input_file, filename, sizeof(ui->input_file));
+	gtk_widget_hide(ui->input_file_selection);
+	return;
+}
+
 static gint update_progress_bar(gpointer data)
 {
 	struct gui *ui = data;
@@ -282,12 +309,33 @@ static gint update_progress_bar(gpointer data)
 	return TRUE;
 }
 
+typedef void (*file_selected_function)(GtkWidget *w, struct gui *ui);
+
+static void setup_file_selection(GtkWidget **file_selection, char *title,
+		file_selected_function ok_selected, void *arg, char *default_filename)
+{
+	*file_selection = gtk_file_selection_new(title);
+	g_signal_connect (*file_selection, "delete-event", G_CALLBACK (gtk_widget_hide), *file_selection);
+	g_signal_connect (*file_selection, "destroy", G_CALLBACK (gtk_widget_hide), *file_selection);
+	g_signal_connect (GTK_FILE_SELECTION (*file_selection)->ok_button,
+		"clicked", G_CALLBACK (ok_selected), (gpointer) arg);
+    
+	/* Connect the cancel_button to hide the widget */
+	g_signal_connect_swapped(GTK_FILE_SELECTION (*file_selection)->cancel_button,
+	                      "clicked", G_CALLBACK (gtk_widget_hide),
+			      *file_selection);
+    
+	gtk_file_selection_set_filename(GTK_FILE_SELECTION(*file_selection),
+						default_filename);
+}
+
 static void init_ui(int *argc, char **argv[], struct gui *ui)
 {
 	unsigned int i;
 
 	gtk_init(argc, argv);
 
+	strcpy(ui->input_file, "");
 	ui->progress = 0.0;
 	ui->thread_done = 0;
 	ui->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
@@ -317,6 +365,11 @@ static void init_ui(int *argc, char **argv[], struct gui *ui)
 	gtk_widget_set_tooltip_text(ui->reverbcheck, "Enable (or disable) \"poor man's reverb\"");
 	/* gtk_toggle_button_set_active((GtkToggleButton *) ui->reverbcheck, TRUE); */
 
+	ui->whitenoisecheck = gtk_check_button_new_with_label("Use white noise");
+	gtk_widget_set_tooltip_text(ui->whitenoisecheck,
+		"If checked, use white noise as input signal.  "
+		"If not checked, use specified 44.1kHz mono wave file as "
+		"input signal (use Input button below)");
 	gtk_box_pack_start(GTK_BOX(ui->drawingbox), ui->drawing_area, FALSE, FALSE, 0);
 	gtk_container_add(GTK_CONTAINER(ui->vbox1), ui->drawingbox);
 
@@ -328,25 +381,14 @@ static void init_ui(int *argc, char **argv[], struct gui *ui)
 	}
 
 	gtk_box_pack_start(GTK_BOX (ui->vbox1), ui->reverbcheck, TRUE, TRUE, 0);
+	gtk_box_pack_start(GTK_BOX (ui->vbox1), ui->whitenoisecheck, TRUE, TRUE, 1);
 	gtk_container_add(GTK_CONTAINER(ui->vbox1), ui->progress_bar);
 	gtk_container_add(GTK_CONTAINER (ui->vbox1), ui->buttonhbox);
 
 	gtk_window_set_default_size(GTK_WINDOW(ui->window), 800, 500);
 
-
-	ui->file_selection = gtk_file_selection_new("Save Audio file");
-	g_signal_connect (ui->file_selection, "delete-event", G_CALLBACK (gtk_widget_hide), ui->file_selection);
-	g_signal_connect (ui->file_selection, "destroy", G_CALLBACK (gtk_widget_hide), ui->file_selection);
-	g_signal_connect (GTK_FILE_SELECTION (ui->file_selection)->ok_button,
-		"clicked", G_CALLBACK (save_file_selected), (gpointer) ui);
-    
-	/* Connect the cancel_button to hide the widget */
-	g_signal_connect_swapped(GTK_FILE_SELECTION (ui->file_selection)->cancel_button,
-	                      "clicked", G_CALLBACK (gtk_widget_hide),
-			      ui->file_selection);
-    
-	gtk_file_selection_set_filename(GTK_FILE_SELECTION(ui->file_selection), 
-					"explosion.wav");
+	setup_file_selection(&ui->file_selection, "Save Audio file", save_file_selected, ui, "explosion.wav");
+	setup_file_selection(&ui->input_file_selection, "Select input file", input_file_selected, ui, "");
 
 	/* No sound yet generated, so disable buttons until then */    
 	gtk_widget_set_sensitive(ui->button[SAVEBUTTON], 0);
@@ -362,6 +404,7 @@ static void init_ui(int *argc, char **argv[], struct gui *ui)
 		show_slider(&ui->sliderlist[i]);
 	gtk_widget_show(ui->slidertable);
 	gtk_widget_show(ui->reverbcheck);
+	gtk_widget_show(ui->whitenoisecheck);
 	for (i = 0; i < ARRAYSIZE(ui->button); i++)
 		gtk_widget_show(ui->button[i]);
 	gtk_widget_show(ui->drawing_area);
