@@ -75,6 +75,7 @@ typedef void (*clickfunction)(GtkWidget *widget, gpointer data);
 
 static void generateclicked(GtkWidget *widget, gpointer data);
 static void playclicked(GtkWidget *widget, gpointer data);
+static void cancelclicked(GtkWidget *widget, gpointer data);
 static void saveclicked(GtkWidget *widget, gpointer data);
 static void quitclicked(GtkWidget *widget, gpointer data);
 
@@ -90,6 +91,8 @@ struct button_spec {
 	{ "Play", playclicked, "Play the most recently generated sound."},
 #define SAVEBUTTON 2
 	{ "Save", saveclicked, "Save the most recently generated sound."},
+#define CANCELBUTTON 3
+	{ "Cancel", cancelclicked, "Stop calculating audio data."},
 	{ "Quit", quitclicked, "Quit Explodomatica"},
 
 };
@@ -138,6 +141,21 @@ static void playclicked(__attribute__((unused)) GtkWidget *widget,
 	wwviaudio_add_sound(1);
 }
 
+static void cancelclicked(__attribute__((unused)) GtkWidget *widget,
+		__attribute__((unused)) gpointer data)
+{
+	struct gui *ui = data;
+	if (ui->thread_done)
+		return;
+	pthread_cancel(ui->t);
+	ui->progress = 0.0;
+	generated_sound = 0;
+	gtk_widget_set_sensitive(ui->button[GENERATEBUTTON], 1);
+	gtk_widget_set_sensitive(ui->button[SAVEBUTTON], 0);
+	gtk_widget_set_sensitive(ui->button[PLAYBUTTON], 0);
+	gtk_widget_set_sensitive(ui->button[CANCELBUTTON], 0);
+}
+
 static void saveclicked(__attribute__((unused)) GtkWidget *widget, gpointer data)
 {
 	struct gui *ui = data;
@@ -175,6 +193,7 @@ static void generateclicked(__attribute__((unused)) GtkWidget *widget, gpointer 
 	gtk_widget_set_sensitive(ui->button[GENERATEBUTTON], 0);
 	gtk_widget_set_sensitive(ui->button[SAVEBUTTON], 0);
 	gtk_widget_set_sensitive(ui->button[PLAYBUTTON], 0);
+	gtk_widget_set_sensitive(ui->button[CANCELBUTTON], 1);
 
 	ui->e = explodomatica_defaults;
 	
@@ -256,6 +275,7 @@ static gint update_progress_bar(gpointer data)
 		gtk_widget_set_sensitive(ui->button[GENERATEBUTTON], 1);
 		gtk_widget_set_sensitive(ui->button[SAVEBUTTON], 1);
 		gtk_widget_set_sensitive(ui->button[PLAYBUTTON], 1);
+		gtk_widget_set_sensitive(ui->button[CANCELBUTTON], 0);
 		pthread_join(ui->t, NULL);
 		ui->thread_done = 0;
 	}
@@ -331,6 +351,7 @@ static void init_ui(int *argc, char **argv[], struct gui *ui)
 	/* No sound yet generated, so disable buttons until then */    
 	gtk_widget_set_sensitive(ui->button[SAVEBUTTON], 0);
 	gtk_widget_set_sensitive(ui->button[PLAYBUTTON], 0);
+	gtk_widget_set_sensitive(ui->button[CANCELBUTTON], 0);
 
 	gtk_widget_show(ui->vbox1);
 	gtk_widget_show(ui->progress_bar);
