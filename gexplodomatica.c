@@ -130,13 +130,10 @@ static void quitclicked(__attribute__((unused)) GtkWidget *widget,
 static void playclicked(__attribute__((unused)) GtkWidget *widget,
 		__attribute__((unused)) gpointer data)
 {
-	printf("play clicked\n");
 	if (!generated_sound) {
-		printf("Nothing to play.\n");
 		return;
 	}
 	wwviaudio_cancel_all_sounds();
-	printf("nsamples = %d\n", generated_sound->nsamples);
 	wwviaudio_use_double_clip(1, generated_sound->data, generated_sound->nsamples);
 	wwviaudio_add_sound(1);
 }
@@ -145,9 +142,7 @@ static void saveclicked(__attribute__((unused)) GtkWidget *widget, gpointer data
 {
 	struct gui *ui = data;
 
-	printf("save clicked\n");
 	if (!generated_sound) {
-		printf("nothing to save.\n");
 		return;
 	}
 	gtk_widget_show(ui->file_selection);
@@ -168,14 +163,12 @@ static void data_ready(struct sound *s, void *x)
 	struct gui *ui = x;
 	generated_sound = s;
 	ui->thread_done = 1;
-	printf("data ready\n");
 }
 
 static void generateclicked(__attribute__((unused)) GtkWidget *widget, gpointer data)
 {
 	struct gui *ui = data;
 
-	printf("generate clicked\n");
 	ui->progress = 0.0;
 
 	/* disable save and play buttons while sound is generated */
@@ -208,7 +201,6 @@ static void generateclicked(__attribute__((unused)) GtkWidget *widget, gpointer 
 	ui->arg.f = data_ready; 
 	ui->arg.arg = ui;
 	explodomatica_thread(&ui->t, &ui->arg);
-	printf("Generating data\n");
 }
 
 static void add_slider(GtkWidget *container, int row,
