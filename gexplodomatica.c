@@ -62,7 +62,7 @@ struct slider_spec {
 			"the sound up, values less than 1.0 slow it down." },
 	{ "Reverb early refls:", 1.0, 50.0, 1.0, 5.0,
 			"Number of early reflections in reverb" },
-	{ "Reverb late refls:", 1.0, 2000.0, 1.0, 1000.0,
+	{ "Reverb late refls:", 1.0, 1000.0, 1.0, 40.0,
 			"Number of late reflections in reverb" },
 };
 
