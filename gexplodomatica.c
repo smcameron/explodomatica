@@ -249,8 +249,10 @@ static void add_slider(GtkWidget *container, int row,
 	gtk_label_set_justify(GTK_LABEL(s->label), GTK_JUSTIFY_RIGHT);
 	s->slider = gtk_hscale_new_with_range(r1, r2, inc);
 	gtk_range_set_value(GTK_RANGE(s->slider), initial_value);
-	if (tooltiptext)
+	if (tooltiptext) {
 		gtk_widget_set_tooltip_text(s->slider, tooltiptext);
+		gtk_widget_set_tooltip_text(s->label, tooltiptext);
+	}
 	gtk_table_attach(GTK_TABLE(container), s->label, 0, 1, row, row + 1, 0, 0, 5, 1);
 	gtk_table_attach(GTK_TABLE(container), s->slider, 1, 2, row, row + 1,
 			GTK_EXPAND | GTK_FILL, GTK_EXPAND | GTK_FILL, 5, 1);
