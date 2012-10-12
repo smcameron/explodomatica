@@ -6,3 +6,11 @@ video: http://www.youtube.com/watch?v=u3KHg2AwpMM
 
 See http://smcameron.github.com/explodomatica
 
+Note: this program depends on the following libraries:
+
+libvorbis   http://xiph.org/   Your distro probably already has this.
+portaudio   http://www.portaudio.com/  You need v19, not v18. 
+sndfile     http://www.mega-nerd.com/libsndfile/  Your distro may have this already.
+
+
+
