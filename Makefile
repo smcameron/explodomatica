@@ -21,11 +21,11 @@ libexplodomatica.o:	libexplodomatica.c explodomatica.h Makefile
 	$(CC) ${CFLAGS} -c libexplodomatica.c
 
 explodomatica:	explodomatica.c explodomatica.h libexplodomatica.o Makefile
-	$(CC) ${CFLAGS} -lm -lsndfile -o explodomatica libexplodomatica.o explodomatica.c
+	$(CC) ${CFLAGS} -lm -lsndfile -o explodomatica libexplodomatica.o explodomatica.c -lsndfile
 
 gexplodomatica:	gexplodomatica.c libexplodomatica.o explodomatica.h ogg_to_pcm.o wwviaudio.o Makefile
 	$(CC) ${CFLAGS} ${GTKCFLAGS} ${GTKLDFLAGS} -pthread -lm -lvorbisfile -lportaudio -lsndfile -o gexplodomatica \
-			ogg_to_pcm.o wwviaudio.o libexplodomatica.o gexplodomatica.c
+			ogg_to_pcm.o wwviaudio.o libexplodomatica.o gexplodomatica.c -lsndfile ${GTKLDFLAGS} -lvorbisfile -lportaudio -lm
 
 clean:
 	rm -f explodomatica gexplodomatica *.o
