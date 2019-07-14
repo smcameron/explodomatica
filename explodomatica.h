@@ -49,21 +49,22 @@ struct explosion_def {
 	int reverb; 
 };
 
-static struct explosion_def explodomatica_defaults = {
-	{ 0 },
-	{ 0 },
-	NULL,
-	0LL,
-	4.0,	/* duration in seconds (roughly) */
-	4,	/* nlayers */
-	1,	/* preexplosions */
-	0.25,	/* preexplosion delay, 250ms */
-	0.8,	/* preexplosion low pass factor */
-	1,	/* preexplosion low pass iters */
-	0.45,	/* final speed factor */
-	10,	/* final reverb early reflections */
-	50,	/* final reverb late reflections */
-	1,	/* reverb wanted? */
+/* Initializer for struct explosion_def */
+#define EXPLOSION_DEF_DEFAULTS { \
+	{ 0 }, \
+	{ 0 }, \
+	NULL, \
+	0LL, \
+	4.0,	/* duration in seconds (roughly) */ \
+	4,	/* nlayers */ \
+	1,	/* preexplosions */ \
+	0.25,	/* preexplosion delay, 250ms */ \
+	0.8,	/* preexplosion low pass factor */ \
+	1,	/* preexplosion low pass iters */ \
+	0.45,	/* final speed factor */ \
+	10,	/* final reverb early reflections */ \
+	50,	/* final reverb late reflections */ \
+	1,	/* reverb wanted? */ \
 };
 
 GLOBAL struct sound *explodomatica(struct explosion_def *e);

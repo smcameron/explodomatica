@@ -27,6 +27,7 @@
 #include "explodomatica.h"
 #include "wwviaudio.h"
 
+static struct explosion_def explodomatica_defaults = EXPLOSION_DEF_DEFAULTS;
 static struct sound *generated_sound = NULL;
 
 #define ARRAYSIZE(x) (sizeof(x) / sizeof((x)[0]))

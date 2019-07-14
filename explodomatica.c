@@ -34,6 +34,8 @@
 
 #include "explodomatica.h"
 
+static struct explosion_def explodomatica_defaults = EXPLOSION_DEF_DEFAULTS;
+
 void usage(void)
 {
 	fprintf(stderr, "usage:\n");
