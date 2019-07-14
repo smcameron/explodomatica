@@ -487,7 +487,7 @@ static void read_input_file(char *filename,
 	}
 
 	printf("Input file:%s\n", filename);
-	printf("  frames:      %llu\n", sfi.frames);
+	printf("  frames:      %lu\n", sfi.frames);
 	printf("  sample rate: %d\n", sfi.samplerate);
 	printf("  channels:    %d\n", sfi.channels);
 	printf("    format:    %d\n", sfi.format);

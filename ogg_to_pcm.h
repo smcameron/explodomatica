@@ -31,7 +31,7 @@
  * in *nsamples, and the samplesize in *samplesize. and etc.
  */
 GLOBAL int ogg_to_pcm(char *infile, int16_t **pcmbuffer,
-	int *samplesize, int *sample_rate, int *nchannels,
+	__attribute__((unused)) int *samplesize, int *sample_rate, int *nchannels,
 	uint64_t *nsamples);
 
 #undef GLOBAL
