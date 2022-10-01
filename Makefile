@@ -30,4 +30,9 @@ gexplodomatica:	gexplodomatica.c libexplodomatica.o explodomatica.h ogg_to_pcm.o
 clean:
 	rm -f explodomatica gexplodomatica *.o
 
+scan-build:
+	make clean
+	rm -fr /tmp/explode-scan-build-output
+	scan-build -o /tmp/explode-scan-build-output make CC=clang
+	xdg-open /tmp/explode-scan-build-output/*/index.html
 
