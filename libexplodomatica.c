@@ -152,6 +152,7 @@ static void accumulate_sound(struct sound *acc, struct sound *inc)
 	free_sound(acc);
 	acc->data = t->data;
 	acc->nsamples = t->nsamples;
+	free(t);
 }
 
 static void amplify_in_place(struct sound *s, double gain)
