@@ -270,7 +270,7 @@ static struct sound *change_speed(struct sound *s, double factor)
 	o->data[0] = s->data[0];
 	o->nsamples = 1;
 
-	for (i = 1; i < nsamples; i++) {
+	for (i = 1; i < nsamples - 1; i++) {
 		sample_point = (double) i / (double) nsamples * (double) s->nsamples;
 		sp1 = (int) sample_point;
 		sp2 = sp1 + 1;
@@ -278,6 +278,7 @@ static struct sound *change_speed(struct sound *s, double factor)
 						(double) sp2, s->data[sp2]);
 		o->nsamples++;
 	}
+	o->data[nsamples - 1] = s->data[s->nsamples - 1];
 	return o;
 }
 
