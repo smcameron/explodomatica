@@ -241,6 +241,7 @@ static void sliding_low_pass_inplace(struct sound *s, double alpha1, double alph
 	free_sound(s);
 	s->data = o->data;
 	s->nsamples = o->nsamples;
+	free(o);
 }
 
 static double interpolate(double x, double x1, double y1, double x2, double y2)
