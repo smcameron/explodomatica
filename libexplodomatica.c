@@ -565,9 +565,15 @@ void *threadfunc(void *arg)
 	struct explodomatica_thread_arg *a = arg;
 	struct sound *s;
 
+	if (!a)
+		return NULL;
+	if (!a->e)
+		return NULL;
 	if (a->e->nlayers <= 0)
 		return NULL;
 	s = explodomatica(a->e);
+	if (!s)
+		return NULL;
 	a->f(s, a->arg);
 	return NULL;
 }
