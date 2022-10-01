@@ -221,6 +221,7 @@ static struct sound *sliding_low_pass(struct sound *s,
 
 	o->data[0] = s->data[0];
 
+	assert(s->nsamples >= 2);
 	for (i = 1; i < s->nsamples;) {
 		alpha = ((double) i / (double) s->nsamples) *
 			(alpha2 - alpha1) + alpha1;
