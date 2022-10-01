@@ -372,6 +372,7 @@ static struct sound *poor_mans_reverb(struct sound *s,
 		delay_effect_in_place(echo2, delay);
 		accumulate_sound(withverb, echo2);
 		free_sound(echo2);
+		free(echo2);
 		update_progress(progress_inc);
 	}
 
@@ -386,8 +387,11 @@ static struct sound *poor_mans_reverb(struct sound *s,
 		delay_effect_in_place(echo2, delay);
 		accumulate_sound(withverb, echo2);
 		free_sound(echo2);
+		free(echo2);
 		update_progress(progress_inc);
 	}
+	free_sound(echo);
+	free(echo);
 	printf("done\n");
 	return withverb;
 }
