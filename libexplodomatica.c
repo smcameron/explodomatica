@@ -30,6 +30,7 @@
 #include <getopt.h>
 #include <limits.h>
 #include <pthread.h>
+#include <assert.h>
 
 #include <sndfile.h> /* libsndfile */
 
@@ -396,6 +397,7 @@ static struct sound *make_explosion(struct explosion_def *e, double seconds, int
 	double a1, a2;
 	int i, j, iters;
 
+	assert(nlayers > 0);
 	for (i = 0; i < nlayers; i++) {
 		t = make_noise(e, seconds_to_frames(seconds));
 
@@ -563,6 +565,8 @@ void *threadfunc(void *arg)
 	struct explodomatica_thread_arg *a = arg;
 	struct sound *s;
 
+	if (a->e->nlayers <= 0)
+		return NULL;
 	s = explodomatica(a->e);
 	a->f(s, a->arg);
 	return NULL;
