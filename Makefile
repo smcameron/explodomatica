@@ -2,7 +2,7 @@
 CC=gcc
 CFLAGS=-g -W -Wall -Wextra -pthread -D_FORTIFY_SOURCE=3 -fsanitize=bounds \
 	-Wstringop-truncation -Warray-bounds -Wstringop-overflow \
-	-fstack-protector-strong -Wvla -Wimplicit-fallthrough
+	-fstack-protector-strong -Wvla -Wimplicit-fallthrough -Wstrict-prototypes
 
 GTKCFLAGS = `pkg-config gtk+-2.0 --cflags`
 GTKLDFLAGS = `pkg-config gtk+-2.0 --libs`
